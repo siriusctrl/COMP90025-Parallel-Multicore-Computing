@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/xinyaoniu/Documents/COMP90025-Parallel-Multicore-Computing/test/openmp.cpp
+omp.h
+-
+iostream
+-
+array
+-
+
+/usr/local/include/omp.h
+stdlib.h
+-
+stdint.h
+-
+

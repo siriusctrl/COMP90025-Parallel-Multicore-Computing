@@ -1,0 +1,1 @@
+/usr/bin/g++ -O3 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.15.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names -Wl,-pie -Wl,-headerpad_max_install_names -Wl,-dead_strip_dylibs CMakeFiles/main.dir/openmp.cpp.o -o main  -Wl,-rpath,/Users/xinyaoniu/anaconda3/lib /Users/xinyaoniu/anaconda3/lib/libomp.dylib 

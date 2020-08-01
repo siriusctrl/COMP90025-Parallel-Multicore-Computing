@@ -1,0 +1,3 @@
+/Users/xinyaoniu/Documents/COMP90025-Parallel-Multicore-Computing/test/CMakeFiles/rebuild_cache.dir
+/Users/xinyaoniu/Documents/COMP90025-Parallel-Multicore-Computing/test/CMakeFiles/edit_cache.dir
+/Users/xinyaoniu/Documents/COMP90025-Parallel-Multicore-Computing/test/CMakeFiles/main.dir
