@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
 
     cout << "doing job with " << n_thread << " threads" << endl;
 
-    cout << "pi = " << cal_pi_atom(n_thread) << endl;
+    cout << "pi = " << cal_pi_reduction(n_thread) << endl;
 
     return 0;
 }
@@ -84,6 +84,9 @@ double cal_pi_non_for() {
 
 }
 
+/**
+ * synchronization
+ */
 double cal_pi_atom(int n_thread) {
 
     const int NUM_STEPS {100'000'000};
@@ -103,10 +106,40 @@ double cal_pi_atom(int n_thread) {
             x = (i+0.5)*step;
             sum += 4.0/(1.0+x*x);
         }
+
         // it is critical important to only sum the value here instead of in the for loop
         #pragma omp atomic
         pi += sum*step;
     }
     
     return pi;
+}
+
+/**
+ * loop construct
+ */ 
+double cal_pi_reduction(int n_thread) {
+
+    const int NUM_STEPS {100'000'000};
+    double step {1.0/(double) NUM_STEPS};
+
+    double x {0}, sum {0};
+
+    omp_set_num_threads(n_thread);
+
+    // private x is a must
+    #pragma omp parallel for private(x) reduction(+:sum)
+    for (size_t i = 0; i < NUM_STEPS; i++) {
+        x = (i+0.5)*step;
+        sum += 4.0/(1.0+x*x);
+    }
+    
+    return step * sum;
+}
+
+/**
+ * random number (Monte Carlo Calculations)
+ */
+double cal_pi_monte_carlo(int n_thread) {
+    
 }
