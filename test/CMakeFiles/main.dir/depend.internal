@@ -3,4 +3,5 @@
 
 CMakeFiles/main.dir/openmp.cpp.o
  /Users/xinyaoniu/Documents/COMP90025-Parallel-Multicore-Computing/test/openmp.cpp
+ /Users/xinyaoniu/Documents/COMP90025-Parallel-Multicore-Computing/test/openmp.h
  /usr/local/include/omp.h
