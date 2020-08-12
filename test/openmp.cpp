@@ -18,9 +18,18 @@ int main(int argc, char* argv[]) {
     std::stringstream input {argv[1]};
     input >> n_thread;
 
+    if (n_thread == -1) {
+        // disable dynamic adjustment of # of threads
+        omp_set_dynamic(0);
+        n_thread = omp_get_max_threads();
+        omp_set_num_threads(n_thread);
+    } else {
+        omp_set_num_threads(n_thread); 
+    }
+
     cout << "doing job with " << n_thread << " threads" << endl;
 
-    cout << "pi = " << cal_pi_reduction(n_thread) << endl;
+    cout << "pi = " << cal_pi_reduction() << endl;
 
     return 0;
 }
@@ -87,15 +96,13 @@ double cal_pi_non_for() {
 /**
  * synchronization
  */
-double cal_pi_atom(int n_thread) {
+double cal_pi_atom() {
 
     const int NUM_STEPS {100'000'000};
     double step {1.0/(double) NUM_STEPS};
 
     double x {0};
     double pi {0.0};
-
-    omp_set_num_threads(n_thread);
 
     #pragma omp parallel
     {
@@ -118,16 +125,15 @@ double cal_pi_atom(int n_thread) {
 /**
  * loop construct
  */ 
-double cal_pi_reduction(int n_thread) {
+double cal_pi_reduction() {
 
     const int NUM_STEPS {100'000'000};
     double step {1.0/(double) NUM_STEPS};
 
     double x {0}, sum {0};
 
-    omp_set_num_threads(n_thread);
-
-    // private x is a must
+    // private x is a must, can use firstprivate(x) to init the value, but its not
+    // necessary here, since we do not do things like +=
     #pragma omp parallel for private(x) reduction(+:sum)
     for (size_t i = 0; i < NUM_STEPS; i++) {
         x = (i+0.5)*step;
@@ -140,6 +146,11 @@ double cal_pi_reduction(int n_thread) {
 /**
  * random number (Monte Carlo Calculations)
  */
-double cal_pi_monte_carlo(int n_thread) {
-    
+double cal_pi_monte_carlo() {
+    // constexpr long num_trails {100'00};
+    // long N_circle {0};
+    // double pi, x, y;
+    // // radius of circle
+    // double r {1.0};
+    return 0.0;
 }

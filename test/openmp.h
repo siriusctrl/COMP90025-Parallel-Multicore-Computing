@@ -3,7 +3,7 @@
 
 double cal_pi();
 double cal_pi_non_for();
-double cal_pi_atom(int n_thread);
-double cal_pi_reduction(int n_thread);
+double cal_pi_atom();
+double cal_pi_reduction();
 
 #endif // __OPENMP_H__
