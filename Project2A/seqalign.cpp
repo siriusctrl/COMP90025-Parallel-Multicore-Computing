@@ -81,20 +81,20 @@ int main(){
 	return 0;
 }
 
-int min3(int a, int b, int c) {
-	if (a < b && a < c) {
-		return a;    
-	} else if (b < a && b < c) {
-		return b;
-	} else {
-		return c;    
-	}
-}
-
 /******************************************************************************/
 /* Do not change any lines above here.            */
 /* All of your changes should be below this line. */
 /******************************************************************************/
+
+int min3(int a, int b, int c) {
+	if (a <= b && a <= c) {
+		return a;
+	} else if (b <= a && b <= c) {
+		return b;
+	} else {
+		return c;
+	}
+}
 
 // equivalent of  int *dp[width] = new int[height][width]
 // but works for width not known at compile time.
@@ -102,7 +102,9 @@ int min3(int a, int b, int c) {
 int **new2d (int width, int height)
 {
 	int **dp = new int *[width];
-	int *dp0 = new int [width * height];
+	size_t size = width;
+	size *= height;
+	int *dp0 = new int [size];
 	if (!dp || !dp0)
 	{
 	    std::cerr << "getMinimumPenalty: new failed" << std::endl;
@@ -126,9 +128,10 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 	int n = y.length(); // length of gene2
 	
 	// table for storing optimal substructure answers
-	//int dp[m+1][n+1] = {0};
 	int **dp = new2d (m+1, n+1);
-	memset (dp[0], 0, (m+1) * (n+1));
+	size_t size = m + 1;
+	size *= n + 1;
+	memset (dp[0], 0, size);
 
 	// intialising the table
 	for (i = 0; i <= m; i++)

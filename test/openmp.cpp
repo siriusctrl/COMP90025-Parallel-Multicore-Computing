@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 
     cout << "doing job with " << n_thread << " threads" << endl;
 
-    cout << "pi = " << cal_pi_non_for() << endl;
+    cout << "pi = " << cal_pi_reduction() << endl;
 
     return 0;
 }
