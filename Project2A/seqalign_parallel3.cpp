@@ -5,7 +5,6 @@
 #include <string>
 #include <cstring>
 #include <iostream>
-#include <omp.h>
 
 using namespace std;
 
@@ -13,7 +12,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, int* xans
 
 // Return current time, for performance measurement
 uint64_t GetTimeStamp() {
-    struct timeval tv;
+    struct timeval  tv;
     gettimeofday(&tv,NULL);
     return tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
 }
@@ -82,20 +81,23 @@ int main(){
     return 0;
 }
 
+int min3(int a, int b, int c) {
+    if (a <= b && a <= c) {
+        return a;    
+    } else if (b <= a && b <= c) {
+        return b;
+    } else {
+        return c;    
+    }
+}
+
 /******************************************************************************/
 /* Do not change any lines above here.            */
 /* All of your changes should be below this line. */
 /******************************************************************************/
-
-int min3(int a, int b, int c) {
-    if (a <= b && a <= c) {
-        return a;
-    } else if (b <= a && b <= c) {
-        return b;
-    } else {
-        return c;
-    }
-}
+#include "omp.h"
+#include "assert.h"
+#include <bits/stdc++.h>
 
 // equivalent of  int *dp[width] = new int[height][width]
 // but works for width not known at compile time.
@@ -103,9 +105,7 @@ int min3(int a, int b, int c) {
 int **new2d (int width, int height)
 {
     int **dp = new int *[width];
-    size_t size = width;
-    size *= height;
-    int *dp0 = new int [size];
+    int *dp0 = new int [width * height];
     if (!dp || !dp0)
     {
         std::cerr << "getMinimumPenalty: new failed" << std::endl;
@@ -118,6 +118,9 @@ int **new2d (int width, int height)
     return dp;
 }
 
+// uncomment to enable debug mode
+// #define DEBUG 0
+
 // function to find out the minimum penalty
 // return the maximum penalty and put the aligned sequences in xans and yans
 int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
@@ -129,10 +132,9 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
     int n = y.length(); // length of gene2
     
     // table for storing optimal substructure answers
+    //int dp[m+1][n+1] = {0};
     int **dp = new2d (m+1, n+1);
-    size_t size = m + 1;
-    size *= n + 1;
-    memset (dp[0], 0, size);
+    memset (dp[0], 0, (m+1) * (n+1));
 
     // intialising the table
     for (i = 0; i <= m; i++)
@@ -144,50 +146,96 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
         dp[0][i] = i * pgap;
     }
 
-    const int ROW = m+1;
-    const int COL = n+1;
-    const int N_CORE = 4;
+    for (i = 1; i <= m; i++) {
+        for (j = 1; j <= n; j++) {
+            dp[i][j] = -1;
+        }
+    }
 
-    cout << "m :" << m << " n: " << n << endl;
-    omp_set_num_threads(N_CORE);
-    
-    cout << endl;
+    #ifdef DEBUG
+        for (i = 0; i <= m; i++) 
+            for (j = 0; j <= n; j++) 
+                // Prints ' ' if j != n-1 else prints '\n'           
+                std::cout << dp[i][j] << " \n"[j == n]; 
+        std::cout << ">>>> \n";
+    #endif
 
-    for (int line=1; line<=(ROW + COL - 1); line++) { 
-        /* Get column index of the first element in this line of output. 
-            The index is 0 for first ROW lines and line - ROW for remaining 
-            lines  */
-        int start_col =  max(0, line - ROW); 
+    vector< pair<int,int> > vect;
 
-        /* Get count of elements in this line. The count of elements is 
-            equal to minimum of line number, COL-start_col and ROW */
-        int count = min(line, min((COL-start_col), ROW)); 
-
-        /* Print elements of this line */
-        #pragma omp parallel 
-        {
-            for (int j=omp_get_thread_num(); j < count; j+=N_CORE) {
-                // printf("%5d ", matrix[min(ROW, line)-j-1][start_col+j]);
-                int cur_x = min(ROW, line)-j-1;
-				int cur_y = start_col+j;
-
-                if (cur_x==0 || cur_y==0) {
-                    continue;
+    for (i = 0; i <= (m + n -1); i++) {
+        // std::cout << "* i " << i << "\n";
+        if (i <= n) {
+            for(j = i; j > 0; j--) {
+                int dpx = i+1-j;
+                if (dpx <= m) {
+                    // std::cout << "* i, j " << dpx << "," << j << " if \n";
+                    vect.push_back( make_pair(dpx, j) ); 
                 }
-
-                if(x[cur_x - 1] == y[cur_y - 1]) {
-                	dp[cur_x][cur_y] = dp[cur_x-1][cur_y-1];
-                } else {
-                	dp[cur_x][cur_y] = min3(
-                		dp[cur_x-1][cur_y-1] + pxy,
-                		dp[cur_x-1][cur_y] + pgap,
-                		dp[cur_x][cur_y-1] + pgap
-                	);
+            }
+        } else {
+            for(j = n; j >= i-m+1; j--) {
+                if (j > 0) {
+                    int dpx = i+1-j;
+                    // std::cout << "* i, j " << dpx << "," << j << " else\n";
+                    vect.push_back( make_pair(dpx, j) ); 
                 }
             }
         }
     }
+    
+    int n_threads = 4;
+    #pragma omp parallel num_threads(n_threads) private(i) shared(dp)
+    {
+    int id = omp_get_thread_num();
 
+    // #pragma omp parallel for private(i)
+    for (i = id; i < vect.size(); i += n_threads) {
+        pair<int,int> dp_xy = vect.at(i);
+        int left_x    = dp_xy.first-1, 
+            left_y    = dp_xy.second, 
+            up_x      = dp_xy.first, 
+            up_y      = dp_xy.second-1, 
+            left_up_x = dp_xy.first-1, 
+            left_up_y = dp_xy.second-1;
+
+        // #pragma omp critical
+        // cout << "i = " << i << "; thread: " << omp_get_thread_num() << endl;
+
+        // #pragma omp critical
+        // cout << "*waiting (i,j) (" << dp_xy.first << "," << dp_xy.second << ")" << endl;
+        // wait for synchronization
+        // #pragma omp flush(dp)
+        while (dp[left_x][left_y] == -1 || dp[up_x][up_y] == -1 || dp[left_up_x][left_up_y] == -1) {
+            // #pragma omp critical
+            // cout << "waiting (i,j) (" << dp_xy.first << "," << dp_xy.second << ")" << endl;
+            #pragma omp flush(dp)
+        }
+
+        // #pragma omp critical
+        // cout << "  *running (i,j) (" << dp_xy.first << "," << dp_xy.second << ")" << endl;
+        
+        // #pragma omp task depend(in:dp[left_up_x][left_up_y],dp[left_x][left_y],dp[up_x][up_y]) depend(out:dp[dp_xy.first][dp_xy.second])
+        if (x[left_up_x] == y[left_up_y]) {
+            // #pragma omp flush(dp)
+            dp[dp_xy.first][dp_xy.second] = dp[left_up_x][left_up_y];
+        } else {
+            // #pragma omp flush(dp)
+            dp[dp_xy.first][dp_xy.second] = min3(dp[left_up_x][left_up_y] + pxy  ,
+                                                 dp[left_x][left_y]     + pgap ,
+                                                 dp[up_x][up_y]     + pgap);
+        }
+
+        // #pragma omp critical
+        // cout << "    *finished (i,j) (" << dp_xy.first << "," << dp_xy.second << ")" << endl;
+    }
+    }
+
+    #ifdef DEBUG
+        for (i = 0; i <= m; i++) 
+        for (j = 0; j <= n; j++) 
+            // Prints ' ' if j != n-1 else prints '\n'           
+            std::cout << dp[i][j] << " \n"[j == n]; 
+    #endif
 
     // Reconstructing the solution
     int l = n + m; // maximum possible length
