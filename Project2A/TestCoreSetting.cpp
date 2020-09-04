@@ -104,19 +104,42 @@ void matrix_transform_horizontal() {
                             19, 20, 21, 22, 23, 24,  
                             25, 26, 27, 28, 29, 30};
 
-    int shift = COL + min(ROW, COL) - 1;
+    // int matrix[ROW][COL] = {1,  2,  3,  4,  5,  
+    //                         6,  7,  8,  9,  10, 
+    //                         11, 12, 13, 14, 15, 
+    //                         16, 17, 18, 19, 20, 
+    //                         21, 22, 23, 24, 25, 
+    //                         26, 27, 28, 29, 30};
+
+    int shift = COL + min(ROW-1, COL);
     int trans[shift][COL] = {0};
 
     for(int i=0; i<shift; i++) {
 
         int ub = min(i+1, COL);
-        int lb = max(0, i - min(ROW, COL) + 1);
+        int lb = max(0, i - min(ROW, COL) + (ROW < COL));
 
+        // // skip the first row
+        // if (i < COL) {
+        //     ub--;
+        // }
+
+        // // skip the first col
+        // if (i < ROW) {
+        //     lb++;
+        // }
+
+        // printf("lb:%d, ub:%d\n", lb, ub);
+        #pragma omp parallel for
         for(int j=lb; j < ub; j++) {
             int o_row = i-j;
+            int left = trans[i-1][j-1];
+            int up = trans[i-1][j];
+            int up_left = trans[i-2][j-1];
 
-            printf("I am (%d, %d), back to (%d, %d)", i, j, o_row, j);
-            cout << endl;
+            // printf("I am (%d, %d), back to (%d, %d) ", i, j, o_row, j);
+            // printf("left:%d, up:%d, up_left:%d", left, up, up_left);
+            // cout << endl;
 
             // if(o_row < 0 || o_row >= min(ROW, COL)) {
             //     continue;
@@ -127,7 +150,7 @@ void matrix_transform_horizontal() {
     }
 
     for(int i=0; i<shift; i++) {
-        cout << "i:" << i << "\t";
+        // cout << "i:" << i << "\t";
         for(int j=0; j<COL; j++) {
             cout << trans[i][j] << "\t";
         }
@@ -135,8 +158,87 @@ void matrix_transform_horizontal() {
     }
 }
 
+int min3(int a, int b, int c) {
+    return min(min(a,b),c);
+}
+
+void h_test() {
+    string x = "AGGGCT";
+    string y = "AGGGA";
+
+    const int pxy = 3;
+    const int pgap = 2;
+
+    const int ROW = x.length()+1;
+    const int COL = y.length()+1;
+    const int N_CORE = 1;
+    
+    
+    omp_set_num_threads(N_CORE);
+
+	// calcuting the minimum penalty
+    int shift = COL + min(ROW-1, COL);
+    int trans[shift][COL] = {0};
+
+    for(int a=0; a<shift; a++) {
+        for(int b=0; b<COL; b++) {
+            trans[a][b] = 0;
+        }
+    }
+
+    for(int i=0; i<shift; i++) {
+
+        int ub = min(i+1, COL);
+        int lb = max(0, i - min(ROW, COL) + (ROW < COL));
+
+        printf("lb:%d, ub:%d\n", lb, ub);
+        #pragma omp parallel for
+        for(int j=lb; j < ub; j++) {
+            int o_row = i-j;
+
+            printf("accessing (%d, %d)\n", i, j);
+
+            for(int a=0; a<shift; a++) {
+                cout << "i:" << a << "\t";
+                for(int b=0; b<COL; b++) {
+                    cout << trans[a][b] << "\t";
+                }
+                cout << endl;
+            }
+
+            if (o_row == 0 || j == 0) {
+                // we are at first row or column
+                trans[i][j] = (o_row+j)*pgap;
+            } else {
+                int left = trans[i-1][j-1];
+                int up = trans[i-1][j];
+                int up_left = trans[i-2][j-1];
+
+                if (x[o_row-1] == y[j-1]) {
+                    trans[i][j] = up_left;
+                } else {
+                    trans[i][j] = min3(up_left + pxy ,
+						                up + pgap ,
+						                left + pgap);
+                }
+            }
+
+            cout << endl;
+        }
+    }
+
+    for(int a=0; a<shift; a++) {
+        cout << "i:" << a << "\t";
+        for(int b=0; b<COL; b++) {
+            cout << trans[a][b] << "\t";
+        }
+        cout << endl;
+    }
+}
+
 int main(int argc, char const *argv[]) {
     matrix_transform_horizontal();
+    // h_test();
 
     return 0;
 }

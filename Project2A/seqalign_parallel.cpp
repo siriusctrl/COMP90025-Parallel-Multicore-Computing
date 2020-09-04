@@ -146,7 +146,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 
     const int ROW = m+1;
     const int COL = n+1;
-    const int N_CORE = 2;
+    const int N_CORE = 6;
 
     cout << "m :" << m << " n: " << n << endl;
     omp_set_num_threads(N_CORE);

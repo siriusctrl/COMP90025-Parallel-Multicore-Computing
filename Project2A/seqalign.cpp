@@ -168,6 +168,8 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
     //     cout << endl;
     // }
 
+	exit(1);
+
 	// Reconstructing the solution
 	int l = n + m; // maximum possible length
 	
