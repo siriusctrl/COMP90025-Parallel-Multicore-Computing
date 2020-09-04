@@ -181,7 +181,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
     //     cout << endl;
     // }
 
-    exit(1);
+    // exit(1);
 
 	// Reconstructing the solution
 	int l = n + m; // maximum possible length
@@ -194,31 +194,35 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 	
 	while ( !(i == 0 || j == 0))
 	{
+        int trans_i = i+j;
+        int trans_j = j;
+
 		if (x[i - 1] == y[j - 1])
 		{
 			xans[xpos--] = (int)x[i - 1];
 			yans[ypos--] = (int)y[j - 1];
 			i--; j--;
 		}
-		else if (dp[i - 1][j - 1] + pxy == dp[i][j])
+		else if ((trans_i - 2) >= 0 && (trans_j - 1 >= 0) && trans[trans_i - 2][trans_j - 1] + pxy == trans[trans_i][trans_j])
 		{
 			xans[xpos--] = (int)x[i - 1];
 			yans[ypos--] = (int)y[j - 1];
 			i--; j--;
 		}
-		else if (dp[i - 1][j] + pgap == dp[i][j])
+		else if ((trans_i - 1 >= 0) && (trans_j - 1 >= 0) && trans[trans_i - 1][trans_j-1] + pgap == trans[trans_i][trans_j])
 		{
 			xans[xpos--] = (int)x[i - 1];
 			yans[ypos--] = (int)'_';
 			i--;
 		}
-		else if (dp[i][j - 1] + pgap == dp[i][j])
+		else if ((trans_i - 1) >= 0 && (trans_j >= 0) && trans[trans_i - 1][trans_j] + pgap == trans[trans_i][trans_j])
 		{
 			xans[xpos--] = (int)'_';
 			yans[ypos--] = (int)y[j - 1];
 			j--;
 		}
 	}
+
 	while (xpos > 0)
 	{
 		if (i > 0) xans[xpos--] = (int)x[--i];
@@ -230,7 +234,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 		else yans[ypos--] = (int)'_';
 	}
 
-	int ret = trans[shift][COL];
+	int ret = trans[shift-1][COL-1];
 
     delete[] trans[0];
     delete[] trans;
