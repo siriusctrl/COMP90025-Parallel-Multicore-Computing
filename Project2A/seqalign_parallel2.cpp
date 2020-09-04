@@ -137,7 +137,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
     int shift = COL + min(ROW-1, COL);
     // int trans[shift][COL] = {0};
     int **trans = new2d(shift, COL);
-    memset(trans[0], 0, shift*COL);
+    // memset(trans[0], 0, shift*COL);
 
     // for(int a=0; a<shift; a++) {
     //     for(int b=0; b<COL; b++) {
