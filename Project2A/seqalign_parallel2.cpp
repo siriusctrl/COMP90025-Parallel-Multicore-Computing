@@ -241,3 +241,5 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 	
 	return ret;
 }
+
+// g++ -fopenmp -o xinyaon-seqalignomp xinyaon-seqalignomp.cpp -O3
