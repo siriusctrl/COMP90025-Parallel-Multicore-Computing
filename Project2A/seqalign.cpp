@@ -161,12 +161,12 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 		}
 	}
 
-	for (i=0;i<=m;++i) {
-        for(j=0;j<=n;++j) {
-            cout << dp[i][j] << " ";
-        }
-        cout << endl;
-    }
+	// for (i=0;i<=m;++i) {
+    //     for(j=0;j<=n;++j) {
+    //         cout << dp[i][j] << " ";
+    //     }
+    //     cout << endl;
+    // }
 
 	// exit(1);
 
