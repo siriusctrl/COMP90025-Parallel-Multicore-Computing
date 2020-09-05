@@ -128,7 +128,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 
     const int ROW = m+1;
     const int COL = n+1;
-    const int N_CORE = omp_get_max_threads();
+    const int N_CORE = 4;
     
     omp_set_num_threads(N_CORE);
 
@@ -209,13 +209,13 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 			yans[ypos--] = (int)y[j - 1];
 			i--; j--;
 		}
-		else if ((trans_i - 1 >= 0) && (trans_j - 1 >= 0) && trans[trans_i - 1][trans_j-1] + pgap == trans[trans_i][trans_j])
+		else if ((trans_i - 1 >= 0) && (trans_j >= 0) && trans[trans_i - 1][trans_j] + pgap == trans[trans_i][trans_j])
 		{
 			xans[xpos--] = (int)x[i - 1];
 			yans[ypos--] = (int)'_';
 			i--;
 		}
-		else if ((trans_i - 1) >= 0 && (trans_j >= 0) && trans[trans_i - 1][trans_j] + pgap == trans[trans_i][trans_j])
+		else if ((trans_i - 1) >= 0 && (trans_j - 1 >= 0) && trans[trans_i - 1][trans_j-1] + pgap == trans[trans_i][trans_j])
 		{
 			xans[xpos--] = (int)'_';
 			yans[ypos--] = (int)y[j - 1];
