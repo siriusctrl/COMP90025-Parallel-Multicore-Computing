@@ -134,7 +134,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 
 
 	// calcuting the minimum penalty
-    int shift = COL + min(ROW-1, COL);
+	int shift = ROW + COL - 1;
     // int trans[shift][COL] = {0};
     int **trans = new2d(shift, COL);
     // memset(trans[0], 0, shift*COL);
@@ -148,7 +148,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
     for(int i=0; i<shift; i++) {
 
         int ub = min(i+1, COL);
-        int lb = max(0, i - min(ROW, COL) + (ROW < COL));
+        int lb = max(0, i-ROW+1);
 
         #pragma omp parallel for
         for(int j=lb; j < ub; j++) {
