@@ -126,19 +126,19 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 	int m = x.length(); // length of gene1
 	int n = y.length(); // length of gene2
 
-	if (n > m) {
-		//swap x and y to make it a smaller matrix
-		m = y.length();
-		n = x.length();
+	// if (n > m) {
+	// 	//swap x and y to make it a smaller matrix
+	// 	m = y.length();
+	// 	n = x.length();
 
-		string temp {x};
-		x = y;
-		y = temp;
+	// 	string temp {x};
+	// 	x = y;
+	// 	y = temp;
 
-		int *temp_ans = xans;
-		xans = yans;
-		yans = temp_ans;
-	}
+	// 	int *temp_ans = xans;
+	// 	xans = yans;
+	// 	yans = temp_ans;
+	// }
 
     const int ROW = m+1;
     const int COL = n+1;

@@ -1,8 +1,8 @@
-def test(filename="easy"):
-    p = "parallel_" + filename
+def test(filename="medium"):
+    p = "parallel2_" + filename
 
     pxy = 1
-    pgap = 1
+    pgap = 3
 
     with open(p, "r") as f:
         for i in range(5):
