@@ -134,7 +134,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 
     const int ROW = m+1;
     const int COL = n+1;
-    const int N_CORE = 6;
+    const int N_CORE = 8;
     
     omp_set_num_threads(N_CORE);
 
@@ -259,7 +259,7 @@ int getMinimumPenalty_seq(std::string x, std::string y, int pxy, int pgap,
 	// size_t size = m + 1;
 	// size *= n + 1;
 
-	omp_set_num_threads(6);
+	omp_set_num_threads(8);
 
 	// intialising the table
 	#pragma omp parallel for
