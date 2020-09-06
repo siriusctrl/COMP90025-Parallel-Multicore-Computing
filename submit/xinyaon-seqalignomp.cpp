@@ -7,7 +7,6 @@
 #include <iostream>
 #include <math.h>
 #include <omp.h>
-#include <iomanip>
 
 using namespace std;
 
@@ -121,22 +120,24 @@ inline int **new2d(int width, int height) {
 int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
                       int *xans, int *yans) {
     
-    constexpr int n_threads {6};
+    constexpr int n_threads {22};
     omp_set_num_threads(n_threads);
 
     const int ROW {(int) (x.length() + 1)};
     const int COL {(int) (y.length() + 1)};
 
+    const int tile_width { (int)ceil( ((float) x.length()) / n_threads )};
+    const int tile_length { (int)ceil( ((float) y.length()) / n_threads )};
+
+    const int width_tiles { (int)ceil( ((float) x.length()) / tile_width )};
+    const int hight_tiles { (int)ceil( ((float) y.length()) / tile_length )};
+
     // table for storing optimal substructure answers
     int **dp = new2d(ROW, COL);
-//	size_t size = m + 1;
-//	size *= n + 1;
-//	memset (dp[0], 0, size);
 
+    // intialising the table
     #pragma omp parallel
-    {
-
-        // intialising the table
+    {   
         #pragma omp for nowait
         for (int i=0; i <= ROW-1; i++) {
             dp[i][0] = i * pgap;
@@ -148,49 +149,28 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
         }
     }
 
-    // Tile parallel
-    
-
-    const int tile_width { (int)ceil( ((float) x.length()) / n_threads )};
-    const int tile_length { (int)ceil( ((float) y.length()) / n_threads )};
-
-    const int width_tiles { (int)ceil( ((float) x.length()) / tile_width )};
-    const int hight_tiles { (int)ceil( ((float) y.length()) / tile_length )};
-
-    // cout << "tile_width :" << tile_width << " "<< "tile_length :" << tile_length<< endl;
-    // cout << "width_tiles :" << width_tiles << " hight_tiles :" << hight_tiles<<endl;
-
-    // There will be tile_width+COL-1 lines in the output
     for (int line = 1; line <= (width_tiles + hight_tiles - 1); line++) {
 
-        /* Get column index of the first element in this line of output.
-           The index is 0 for first tile_width lines and line - tile_width for remaining
-           lines  */
         int start_col = max(0, line - width_tiles);
+        int count_of_line = min3(line, hight_tiles - start_col, width_tiles);
 
-        /* Get count of elements in this line. The count of elements is
-           equal to minimum of line number, tile_length-start_col and width_tiles */
-        int count = min3(line, hight_tiles - start_col, width_tiles);
-
-        /* Print elements of this line */
         #pragma omp parallel for
-        for (int z = 0; z < count; z++) {
-
-            // define bound for both i and j
-            const int i_lb { (min(width_tiles, line) - z - 1) * tile_width + 1 };
-            const int j_lb { (start_col + z) * tile_length + 1 };
+        for (int in_tile = 0; in_tile < count_of_line; in_tile++) {
+            
+            // calculate bound for each in tile
+            const int i_lb { (min(width_tiles, line) - in_tile - 1) * tile_width + 1 };
+            const int j_lb { (start_col + in_tile) * tile_length + 1 };
             const int i_ub { min(i_lb + tile_width, ROW) };
             const int j_ub { min(j_lb + tile_length, COL) };
 
             for (int i = i_lb; i < i_ub; i++) {
                 for (int j = j_lb; j < j_ub; j++) {
-
                     if (x[i - 1] == y[j - 1]) {
                         dp[i][j] = dp[i - 1][j - 1];
                     } else {
-                        dp[i][j] = min3(dp[i - 1][j - 1] + pxy ,
-                                dp[i - 1][j] + pgap ,
-                                dp[i][j - 1] + pgap);
+                        dp[i][j] = min3(dp[i - 1][j - 1] + pxy,
+                                        dp[i - 1][j] + pgap,
+                                        dp[i][j - 1] + pgap);
                     }
                 }
             }
