@@ -92,8 +92,8 @@ void matrix_transform_vertical() {
 }
 
 void matrix_transform_horizontal() {
-    const int ROW = 15;
-    const int COL = 2;
+    const int ROW = 5;
+    const int COL = 6;
     const int N_CORE = 1;
 
     omp_set_num_threads(N_CORE);

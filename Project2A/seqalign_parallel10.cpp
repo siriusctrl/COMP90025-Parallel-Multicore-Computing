@@ -125,28 +125,79 @@ int **new2d (int width, int height)
 // function to find out the minimum penalty
 // return the maximum penalty and put the aligned sequences in xans and yans
 int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
-	int* xans, int* yans)
-{
+	int* xans, int* yans) {
 	int i, j; // intialising variables
 	
 	int m = x.length(); // length of gene1
 	int n = y.length(); // length of gene2
+
+	// swap two string if m < n
+	if (m < n) {
+		string temp { x };
+		x = y;
+		y = temp;
+
+		m = x.length(); // length of gene1
+		n = y.length(); // length of gene2
+
+		int * temp_ans = xans;
+		xans = yans;
+		yans = temp_ans;
+	}
 	
 	// table for storing optimal substructure answers
-    int r = m+1, col = n+1;
-	int row = r + n;
+    int row = m+1, col = n+1;  // size of original & swapped dp matrix
+	int r = row + n; // #rows of diamond matrix
 	int **dp = new2d (row, col);
-	// size_t size = row;
-	// size *= col;
-	// memset (dp[0], 0, size);
-    // cout << "123" << endl;
-	// intialising the table
-	for (i = 0; i <= m; i++) {
-		dp[i][0] = i * pgap;
-	}
-    // cout << "123" << endl;
-	for (i = 0; i <= n; i++) {
-		dp[i][i] = i * pgap;
+
+	#ifdef DEBUG
+		cout.fill(' ');
+        for (i = 0; i < row; i++) {
+            for (j = 0; j < col; j++) {
+                // Prints ' ' if j != n-1 else prints '\n'           
+                cout << setw(3) << dp[i][j] << " "; 
+			}
+			cout << "\n";
+		}
+        cout << ">>>> \n";
+    #endif
+
+    int n_threads = 6;
+    omp_set_num_threads(n_threads);
+
+	// calcuting the minimum penalty
+	// unntil last n rows
+	int until_last_n_row = r - n;
+	for (int i = 0; i < until_last_n_row; i++) {
+		// int j_skew = i-r+1;
+        int upper  = min(i+1, col);
+		// int i_swaped = i - row;
+		// cout << i << " -> " << i_swaped << " j_skew: "<< j_skew << endl;
+		#pragma omp parallel for
+		for (int j = 0; j < upper; j++) {
+            if (j == 0 && i <= m) {
+                dp[i][j] = i * pgap;
+            } 
+            else if (i == j) {
+                dp[i][j] = i * pgap;
+            } else {
+				int left_up_x  = i - 2, 
+					left_up_y  = j - 1,
+					left = i - 1;
+
+				if (x[i - j - 1] == y[left_up_y]) {
+					dp[i][j] = dp[left_up_x][left_up_y];
+					// cout << "equal" << endl;
+				}
+				else {
+					// cout << "min" << endl;
+					// cout << dp[left_up_x][left_up_y] << " " << dp[left_x][left_y] << " " << dp[up_x][up_y] << endl;
+					dp[i][j] = min3(dp[left_up_x][left_up_y] + pxy  ,
+									dp[left][left_up_y]     + pgap ,
+									dp[left][j]     + pgap);
+				}
+			}
+		}
 	}
 
 	#ifdef DEBUG
@@ -161,19 +212,82 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
         cout << ">>>> \n";
     #endif
 
-    int n_threads = 4;
-    omp_set_num_threads(n_threads);
+	// 1st row to be swapped
+	i = 0;
+	// int upper  = min(until_last_n_row+i, col);
+	#pragma omp parallel for
+	for (j = 1; j < col; j++) {
+		int left_x     = until_last_n_row - 1, 
+			left_y     = j - 1, 
+			up_x       = until_last_n_row - 1,  
+			up_y       = j, 
+			left_up_x  = until_last_n_row - 2, 
+			left_up_y  = j - 1;
 
-	// calcuting the minimum penalty
-	for (int i = 2; i < row; i++) {
-        int upper = min(i, col),
-            lower = max(1, i-row);
+			if (x[i - j - 1] == y[left_up_y]) {
+				dp[i][j] = dp[left_up_x][left_up_y];
+			}
+			else {
+				dp[i][j] = min3(dp[left_up_x][left_up_y] + pxy  ,
+								dp[left_up_x][left_up_y]     + pgap ,
+								dp[up_x][up_y]     + pgap);
+			}
+	}
 
+	#ifdef DEBUG
+		cout.fill(' ');
+        for (i = 0; i < row; i++) {
+            for (j = 0; j < col; j++) {
+                // Prints ' ' if j != n-1 else prints '\n'           
+                cout << setw(3) << dp[i][j] << " "; 
+			}
+			cout << "\n";
+		}
+        cout << ">>>> \n";
+    #endif
+
+	// 2nd row to be swapped
+	i = 1;
+	// upper  = min(until_last_n_row+i, col);
+	#pragma omp parallel for
+	for (j = 2; j < col; j++) {
+		int left_x     = 0, 
+			left_y     = j - 1, 
+			up_x       = 0,  
+			up_y       = j, 
+			left_up_x  = until_last_n_row - 1, 
+			left_up_y  = j - 1;
+
+		if (x[i - j - 1] == y[left_up_y]) {
+			dp[i][j] = dp[left_up_x][left_up_y];
+		}
+		else {
+			dp[i][j] = min3(dp[left_up_x][left_up_y] + pxy  ,
+							dp[left_up_x][left_up_y]     + pgap ,
+							dp[up_x][up_y]     + pgap);
+		}
+	}
+
+	#ifdef DEBUG
+		cout.fill(' ');
+        for (i = 0; i < row; i++) {
+            for (j = 0; j < col; j++) {
+                // Prints ' ' if j != n-1 else prints '\n'           
+                cout << setw(3) << dp[i][j] << " "; 
+			}
+			cout << "\n";
+		}
+        cout << ">>>> \n";
+    #endif
+
+	// 3rd ~ n row to be swapped
+	for (i = 2; i < col; i++) {
+		// int upper  = min(until_last_n_row+i, col);
 		#pragma omp parallel for
-		for (int j = lower; j < upper; j++) {
+		for (int j = i+1; j < col; j++) {
 			int left_up_x  = i - 2, 
 				left_up_y  = j - 1,
-                left = i - 1;
+				left = i - 1;
 
 			if (x[i - j - 1] == y[left_up_y]) {
 				dp[i][j] = dp[left_up_x][left_up_y];
@@ -186,34 +300,10 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 								dp[left][left_up_y]     + pgap ,
 								dp[left][j]     + pgap);
 			}
-            
-            // cout << "(i, j) ("<< i << ", " << j << ") my up: (i-1, j-1) (" << i-1 << ", " << j-1 << ")" << endl;
-			
-			// int left_x     = i - 1, 
-			// 	left_y     = j - 1, 
-			// 	up_x       = i - 1,  
-			// 	up_y       = j, 
-			// 	// left_up_x  = i - 2, 
-			// 	// left_up_y  = j - 1,
-			// 	original_i = i - j,
-			// 	original_j = j;
-			
-			// cout << "(" << original_i << "," << original_j << ") -> " << "(i, j) ("<< i << ", " << j << ") my up: (i-1, j-1) (" << up_x << ", " << up_y << ")" << endl;
-
-			// if (x[original_i - 1] == y[original_j - 1]) {
-			// 	dp[i][j] = dp[left_up_x][left_up_y];
-			// 	// cout << "equal" << endl;
-			// }
-			// else {
-			// 	// cout << "min" << endl;
-			// 	// cout << dp[left_up_x][left_up_y] << " " << dp[left_x][left_y] << " " << dp[up_x][up_y] << endl;
-			// 	dp[i][j] = min3(dp[left_up_x][left_up_y] + pxy  ,
-			// 					dp[left_x][left_y]     + pgap ,
-			// 					dp[up_x][up_y]     + pgap);
-			// }			
-			// cout << "(" << original_i << "," << original_j << ") -> " << "(i, j) ("<< i << ", " << j << ") my up: (i-1, j-1) (" << up_x << ", " << up_y << ")" << endl;
 		}
 	}
+
+	exit(1);
 	
 	#ifdef DEBUG
 		cout.fill(' ');
@@ -237,31 +327,32 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 	
 	int dp_i, dp_j;
 
-	while ( !(i == 0 || j == 0))
-	{
+	// cout << "answer: " << dp[r % row - 1][col-1] << endl;
+
+	while ( !(i == 0 || j == 0)) {
+
+
 		dp_i = i + j;
 		dp_j = j;
 
-		if (x[i - 1] == y[j - 1])
-		{
+		// cout << "(" << dp_i << "," << dp_j << ") -> " << "(i, j) ("<< i << ", " << j << ")" << endl;
+
+		if (x[i - 1] == y[j - 1]) {
 			xans[xpos--] = (int)x[i - 1];
 			yans[ypos--] = (int)y[j - 1];
 			i--; j--;
 		}
-		else if (dp[dp_i - 2][dp_j - 1] + pxy == dp[dp_i][dp_j])
-		{
+		else if (dp[(dp_i - 2) % row][dp_j - 1] + pxy == dp[dp_i % row][dp_j]) {
 			xans[xpos--] = (int)x[i - 1];
 			yans[ypos--] = (int)y[j - 1];
 			i--; j--;
 		}
-		else if (dp[dp_i - 1][dp_j - 1] + pgap == dp[dp_i][dp_j])
-		{
+		else if (dp[(dp_i - 1) % row][dp_j] + pgap == dp[dp_i % row][dp_j]) {
 			xans[xpos--] = (int)x[i - 1];
 			yans[ypos--] = (int)'_';
 			i--;
 		}
-		else if (dp[dp_i - 1][dp_j] + pgap == dp[dp_i][dp_j])
-		{
+		else if (dp[(dp_i - 1) % row][dp_j - 1] + pgap == dp[dp_i % row][dp_j]) {
 			xans[xpos--] = (int)'_';
 			yans[ypos--] = (int)y[j - 1];
 			j--;
@@ -278,7 +369,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 		else yans[ypos--] = (int)'_';
 	}
 
-	int ret = dp[row-1][col-1];
+	int ret = dp[(r % row) - 2][col-1];
 
 	delete[] dp[0];
 	delete[] dp;

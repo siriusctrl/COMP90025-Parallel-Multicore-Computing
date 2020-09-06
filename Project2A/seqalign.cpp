@@ -185,28 +185,24 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 			xans[xpos--] = (int)x[i - 1];
 			yans[ypos--] = (int)y[j - 1];
 			i--; j--;
-			cout << "same" << endl;
 		}
 		else if (dp[i - 1][j - 1] + pxy == dp[i][j])
 		{
 			xans[xpos--] = (int)x[i - 1];
 			yans[ypos--] = (int)y[j - 1];
 			i--; j--;
-			cout << "up_left" << endl;
 		}
 		else if (dp[i - 1][j] + pgap == dp[i][j])
 		{
 			xans[xpos--] = (int)x[i - 1];
 			yans[ypos--] = (int)'_';
 			i--;
-			cout << "up" << endl;
 		}
 		else if (dp[i][j - 1] + pgap == dp[i][j])
 		{
 			xans[xpos--] = (int)'_';
 			yans[ypos--] = (int)y[j - 1];
 			j--;
-			cout << "left" << endl;
 		}
 	}
 	while (xpos > 0)
