@@ -173,14 +173,6 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
         }
     }
 
-    for(int i=0; i<shift; i++) {
-        cout << "i:" << i << "\t";
-        for(int j=0; j<COL; j++) {
-            cout << trans[i][j] << "\t";
-        }
-        cout << endl;
-    }
-
 	// Reconstructing the solution
 	int l = n + m; // maximum possible length
 	
@@ -299,15 +291,6 @@ int getMinimumPenalty_seq(std::string x, std::string y, int pxy, int pgap,
 			}
 		}
 	}
-
-	// for (i=0;i<=m;++i) {
-    //     for(j=0;j<=n;++j) {
-    //         cout << dp[i][j] << " ";
-    //     }
-    //     cout << endl;
-    // }
-
-	// exit(1);
 
 	// Reconstructing the solution
 	int l = n + m; // maximum possible length
