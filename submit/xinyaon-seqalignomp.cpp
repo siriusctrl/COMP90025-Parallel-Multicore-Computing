@@ -10,6 +10,8 @@
 using namespace std;
 
 int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, int* xans, int* yans);
+int getMinimumPenalty_seq(std::string x, std::string y, int pxy, int pgap,
+	int* xans, int* yans);
 
 // Return current time, for performance measurement
 uint64_t GetTimeStamp() {
@@ -122,6 +124,124 @@ int **new2d (int width, int height)
 // return the maximum penalty and put the aligned sequences in xans and yans
 int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 	int* xans, int* yans)
+{	
+	int m = x.length(); // length of gene1
+	int n = y.length(); // length of gene2
+
+	if (m > 80000 || n > 80000) {
+		return getMinimumPenalty_seq(x, y, pxy, pgap, xans, yans);
+	}
+
+    const int ROW = m+1;
+    const int COL = n+1;
+    const int N_CORE = 6;
+    
+    omp_set_num_threads(N_CORE);
+
+
+	// calcuting the minimum penalty
+	int shift = ROW + COL - 1;
+    // int trans[shift][COL] = {0};
+    int **trans = new2d(shift, COL);
+    // memset(trans[0], 0, shift*COL);
+
+    for(int i=0; i<shift; i++) {
+
+        int ub = min(i+1, COL);
+        int lb = max(0, i-ROW+1);
+
+        #pragma omp parallel for
+        for(int j=lb; j < ub; j++) {
+            int o_row = i-j;
+
+            if (o_row == 0 || j == 0) {
+                // we are at first row or column
+                trans[i][j] = (o_row+j)*pgap;
+            } else {
+                int left = trans[i-1][j-1];
+                int up = trans[i-1][j];
+                int up_left = trans[i-2][j-1];
+
+                if (x[o_row-1] == y[j-1]) {
+                    trans[i][j] = up_left;
+                } else {
+                    trans[i][j] = min3(up_left + pxy ,
+						                up + pgap ,
+						                left + pgap);
+                }
+            }
+        }
+    }
+
+    for(int i=0; i<shift; i++) {
+        cout << "i:" << i << "\t";
+        for(int j=0; j<COL; j++) {
+            cout << trans[i][j] << "\t";
+        }
+        cout << endl;
+    }
+
+	// Reconstructing the solution
+	int l = n + m; // maximum possible length
+	
+	int i = m;
+    int j = n;
+	
+	int xpos = l;
+	int ypos = l;
+	
+	while ( !(i == 0 || j == 0))
+	{
+        int trans_i = i+j;
+        int trans_j = j;
+
+		if (x[i - 1] == y[j - 1])
+		{
+			xans[xpos--] = (int)x[i - 1];
+			yans[ypos--] = (int)y[j - 1];
+			i--; j--;
+		}
+		else if ((trans_i - 2) >= 0 && (trans_j - 1 >= 0) && trans[trans_i - 2][trans_j - 1] + pxy == trans[trans_i][trans_j])
+		{
+			xans[xpos--] = (int)x[i - 1];
+			yans[ypos--] = (int)y[j - 1];
+			i--; j--;
+		}
+		else if ((trans_i - 1 >= 0) && (trans_j >= 0) && trans[trans_i - 1][trans_j] + pgap == trans[trans_i][trans_j])
+		{
+			xans[xpos--] = (int)x[i - 1];
+			yans[ypos--] = (int)'_';
+			i--;
+		}
+		else if ((trans_i - 1) >= 0 && (trans_j - 1 >= 0) && trans[trans_i - 1][trans_j-1] + pgap == trans[trans_i][trans_j])
+		{
+			xans[xpos--] = (int)'_';
+			yans[ypos--] = (int)y[j - 1];
+			j--;
+		}
+	}
+
+	while (xpos > 0)
+	{
+		if (i > 0) xans[xpos--] = (int)x[--i];
+		else xans[xpos--] = (int)'_';
+	}
+	while (ypos > 0)
+	{
+		if (j > 0) yans[ypos--] = (int)y[--j];
+		else yans[ypos--] = (int)'_';
+	}
+
+	int ret = trans[shift-1][COL-1];
+
+    delete[] trans[0];
+    delete[] trans;
+	
+	return ret;
+}
+
+int getMinimumPenalty_seq(std::string x, std::string y, int pxy, int pgap,
+	int* xans, int* yans)
 {
 	int i, j; // intialising variables
 	
@@ -147,7 +267,7 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 	// size_t size = m + 1;
 	// size *= n + 1;
 
-	omp_set_num_threads(8);
+	omp_set_num_threads(6);
 
 	// intialising the table
 	#pragma omp parallel for
@@ -242,4 +362,5 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 	
 	return ret;
 }
+
 //g++ -std=c++14 -fopenmp xinyaon-seqalignomp.cpp -o xinyaon-seqalignomp -O3
