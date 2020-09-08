@@ -226,8 +226,8 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
 
     int ret = dp[ROW-1][COL-1];
 
-    delete[] dp[0];
-    delete[] dp;
+    // delete[] dp[0];
+    // delete[] dp;
 
     return ret;
 }
