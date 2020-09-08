@@ -7,6 +7,7 @@
 #include <iostream>
 #include <math.h>
 #include <omp.h>
+#include <iomanip>
 
 using namespace std;
 
@@ -120,7 +121,7 @@ inline int **new2d(int width, int height) {
 int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
                       int *xans, int *yans) {
     
-    constexpr int n_threads {22};
+    constexpr int n_threads {12};
     omp_set_num_threads(n_threads);
 
     const int ROW {(int) (x.length() + 1)};
@@ -205,16 +206,19 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
             xans[xpos--] = (int) x[i - 1];
             yans[ypos--] = (int) '_';
             i--;
-        } else if (dp[i][j - 1] + pgap == dp[i][j]) {
+        // } else if (dp[i][j - 1] + pgap == dp[i][j]) {
+        } else {
             xans[xpos--] = (int) '_';
             yans[ypos--] = (int) y[j - 1];
             j--;
         }
     }
+
     while (xpos > 0) {
         if (i > 0) xans[xpos--] = (int) x[--i];
         else xans[xpos--] = (int) '_';
     }
+
     while (ypos > 0) {
         if (j > 0) yans[ypos--] = (int) y[--j];
         else yans[ypos--] = (int) '_';
