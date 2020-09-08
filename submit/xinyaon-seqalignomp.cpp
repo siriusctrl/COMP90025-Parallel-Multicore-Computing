@@ -121,7 +121,7 @@ inline int **new2d(int width, int height) {
 int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
                       int *xans, int *yans) {
     
-    constexpr int n_threads {12};
+    constexpr int n_threads {omp_get_max_threads()};
     omp_set_num_threads(n_threads);
 
     const int ROW {(int) (x.length() + 1)};
