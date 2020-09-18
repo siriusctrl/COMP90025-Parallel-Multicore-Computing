@@ -5,9 +5,6 @@
 #include <string>
 #include <cstring>
 #include <iostream>
-#include <math.h>
-#include <omp.h>
-#include <iomanip>
 
 using namespace std;
 
@@ -86,15 +83,19 @@ int main() {
 /* Do not change any lines above here.            */
 /* All of your changes should be below this line. */
 /******************************************************************************/
+#include "omp.h"
+#include "math.h"
 
 inline int min3(int a, int b, int c) {
-    if (a <= b && a <= c) {
-        return a;
-    } else if (b <= a && b <= c) {
-        return b;
-    } else {
+    if (a <= b) {
+        if (a <= c) {
+            return a;
+        }
         return c;
+    } else if (b <= c) {
+        return b;
     }
+    return c;
 }
 
 // equivalent of  int *dp[width] = new int[height][width]
@@ -110,6 +111,7 @@ inline int **new2d(int width, int height) {
         exit(1);
     }
     dp[0] = dp0;
+
     for (int i = 1; i < width; i++)
         dp[i] = dp[i - 1] + height;
 
@@ -120,78 +122,81 @@ inline int **new2d(int width, int height) {
 // return the maximum penalty and put the aligned sequences in xans and yans
 int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
                       int *xans, int *yans) {
-    
-    constexpr int n_threads {12};
-    omp_set_num_threads(n_threads);
+    int i, j; // intialising variables
 
-    const int ROW {(int) (x.length() + 1)};
-    const int COL {(int) (y.length() + 1)};
-
-    const int tile_width { (int)ceil( ((float) x.length()) / n_threads )};
-    const int tile_length { (int)ceil( ((float) y.length()) / n_threads )};
-
-    const int width_tiles { (int)ceil( ((float) x.length()) / tile_width )};
-    const int hight_tiles { (int)ceil( ((float) y.length()) / tile_length )};
+    int m = x.length(); // length of gene1
+    int n = y.length(); // length of gene2
 
     // table for storing optimal substructure answers
-    int **dp = new2d(ROW, COL);
+    omp_set_num_threads(omp_get_max_threads());
+    int **dp = new2d(m + 1, n + 1);
+
+
+    // remove unnecessary memset
+//    size_t size = m + 1;
+//    size *= n + 1;
+//    memset (dp[0], 0, size);
 
     // intialising the table
-    #pragma omp parallel
-    {   
-        #pragma omp for nowait
-        for (int i=0; i <= ROW-1; i++) {
-            dp[i][0] = i * pgap;
-        }
-
-        #pragma omp for nowait
-        for (int i=0; i <= COL-1; i++) {
-            dp[0][i] = i * pgap;
-        }
+#pragma omp parallel for
+    for (i = 0; i <= m; ++i) {
+        dp[i][0] = i * pgap;
+    }
+#pragma omp parallel for
+    for (i = 0; i <= n; ++i) {
+        dp[0][i] = i * pgap;
     }
 
-    for (int line = 1; line <= (width_tiles + hight_tiles - 1); line++) {
+    int n_threads = 22;
+    omp_set_num_threads(n_threads);
+    // calculating the minimum penalty with the tiling technique in an anti-diagonal version
+    int tile_row_size = (int) ceil((1.0 * m) / n_threads); // Number of dp elements in row of each tile
+    int tile_col_size = (int) ceil((1.0 * n) / n_threads); // Number of dp elements in column of each tile
+    int tile_m = (int) ceil((1.0 * m) / tile_row_size); // Number of tiles in row of the dp matrix
+    int tile_n = (int) ceil((1.0 * n) / tile_col_size); // Number of tile in column of the dp matrix
 
-        int start_col = max(0, line - width_tiles);
-        int count_of_line = min3(line, hight_tiles - start_col, width_tiles);
+    int total_diagonal = tile_m+tile_n-1;
+    int row_min, row_max, diagonal_index, k;
+//    cout << "tile_row_size: " << tile_row_size << ", tile_col_size: " << tile_col_size << endl;
+//    cout << "tile_m: " << tile_m << ", tile_n: " << tile_n << endl;
+//    cout << "total_diagonal: " << total_diagonal << endl;
+    for (diagonal_index=1; diagonal_index<=total_diagonal; ++diagonal_index ){
+        row_min = max(1, diagonal_index-tile_n+1);
+        row_max = min(diagonal_index, tile_m);
+#pragma omp parallel for
+        for (k=row_min; k<=row_max; ++k){
+            int tile_row_start = 1 + (k-1)*tile_row_size; // index inclusive
+            int tile_row_end = min(tile_row_start+tile_row_size, m+1); // index exclusive
+            int tile_col_start = 1 + (diagonal_index - k)*tile_col_size; // index inclusive
+            int tile_col_end = min(tile_col_start+tile_col_size, n+1); // index exclusive
 
-        #pragma omp parallel for
-        for (int in_tile = 0; in_tile < count_of_line; in_tile++) {
-            
-            // calculate bound for each in tile
-            const int i_lb { (min(width_tiles, line) - in_tile - 1) * tile_width + 1 };
-            const int j_lb { (start_col + in_tile) * tile_length + 1 };
-            const int i_ub { min(i_lb + tile_width, ROW) };
-            const int j_ub { min(j_lb + tile_length, COL) };
-
-            for (int i = i_lb; i < i_ub; i++) {
-                for (int j = j_lb; j < j_ub; j++) {
-                    if (x[i - 1] == y[j - 1]) {
-                        dp[i][j] = dp[i - 1][j - 1];
+//            cout << "(" << tile_row_start<< "," << tile_col_start << ")" << " | ";
+//            cout << "-> (" << tile_row_end << "," << tile_col_end << ")" << '|';
+            for (int ii=tile_row_start; ii<tile_row_end; ++ii){
+                for (int jj=tile_col_start; jj<tile_col_end; ++jj){
+                    if (x[ii - 1] == y[jj - 1]) {
+                        dp[ii][jj] = dp[ii - 1][jj - 1];
                     } else {
-                        dp[i][j] = min3(dp[i - 1][j - 1] + pxy,
-                                        dp[i - 1][j] + pgap,
-                                        dp[i][j - 1] + pgap);
+                        dp[ii][jj] = min3(dp[ii - 1][jj - 1]+ pxy,
+                                        dp[ii - 1][jj] + pgap,
+                                        dp[ii][jj - 1] + pgap);
                     }
                 }
             }
         }
+//        cout << "done" << endl;
     }
 
-    // exit(1);
-
     // Reconstructing the solution
-    int l = ROW + COL - 2; // maximum possible length
+    int l = n + m; // maximum possible length
 
-    int i = ROW - 1;
-    int j = COL - 1;
+    i = m;
+    j = n;
 
     int xpos = l;
     int ypos = l;
 
     while (!(i == 0 || j == 0)) {
-        // cout << "(i, j) ("<< i << ", " << j << ")" << endl;
-
         if (x[i - 1] == y[j - 1]) {
             xans[xpos--] = (int) x[i - 1];
             yans[ypos--] = (int) y[j - 1];
@@ -206,30 +211,26 @@ int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap,
             xans[xpos--] = (int) x[i - 1];
             yans[ypos--] = (int) '_';
             i--;
-        // } else if (dp[i][j - 1] + pgap == dp[i][j]) {
         } else {
             xans[xpos--] = (int) '_';
             yans[ypos--] = (int) y[j - 1];
             j--;
         }
     }
-
     while (xpos > 0) {
         if (i > 0) xans[xpos--] = (int) x[--i];
         else xans[xpos--] = (int) '_';
     }
-
     while (ypos > 0) {
         if (j > 0) yans[ypos--] = (int) y[--j];
         else yans[ypos--] = (int) '_';
     }
 
-    int ret = dp[ROW-1][COL-1];
+    int ret = dp[m][n];
 
     delete[] dp[0];
     delete[] dp;
 
     return ret;
 }
-
-//g++ -std=c++14 -fopenmp xinyaon-seqalignomp.cpp -o xinyaon-seqalignomp -O3
+//g++ -fopenmp -o renjiem-seqalignomp renjiem-seqalignomp.cpp -O3

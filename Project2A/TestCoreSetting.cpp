@@ -281,6 +281,7 @@ void h_test() {
 }
 
 int main(int argc, char const *argv[]) {
-    cout << ((float) 3)/2 << endl;
+    // cout << ((float) 3)/2 << endl;
+    matrix_transform_horizontal();
     return 0;
 }
