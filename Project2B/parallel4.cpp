@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
 
 int getMinimumPenalty2(std::string x, std::string y, int pxy, int pgap, int *xans, int *yans, int m, int n);
 
-const int n_threads = 4;
+const int n_threads = 3;
 const int sha512_strlen = 128 + 1; // +1 for '\0'
 
 const int ask_for_genes_tag = 1;
