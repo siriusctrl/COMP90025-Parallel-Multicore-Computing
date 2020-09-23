@@ -13,4 +13,4 @@ module load gcc/8.3.0
 module load openmpi/3.1.4
 
 mpicxx -std=c++14 -fopenmp -o p2 p2.cpp -O3
-mpirun -np 8 p2 < mseq-big13-example.dat
+mpirun -np 8 p3 < mseq-big13-example.dat
