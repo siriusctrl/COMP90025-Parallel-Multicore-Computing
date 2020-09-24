@@ -230,7 +230,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
     #pragma omp parallel default(shared) num_threads(2)
     {
         if (omp_get_thread_num() == 0) {
-            printf("I am %d from group %d\n",omp_get_thread_num(), omp_get_ancestor_thread_num(1));
+            // printf("I am %d from group %d\n",omp_get_thread_num(), omp_get_ancestor_thread_num(1));
             // create job id (#cell, <i, j, job-id>)
             queue<JOB_t> jobs;
             int job_id = 0;
@@ -269,7 +269,8 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             {
                 RESULT_t temp;
                 MPI_Recv(&temp, 1, MPI_RESULT, MPI_ANY_SOURCE, result_collect_tag, comm, &status);
-                cout << "rank-" << status.MPI_SOURCE << "result:" << temp.penalty << " " << temp.id << " " << temp.problemhash << endl;
+                // cout << "rank-" << status.MPI_SOURCE << "result:" << temp.penalty << " " << temp.id << " " << temp.problemhash << endl;
+                
                 results.push_back(temp);
                 // if there are still jobs to do
                 if (!jobs.empty())
@@ -290,7 +291,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                 }
             }
 
-            std::cout << "while end" << endl;
+            // std::cout << "while end" << endl;
 
             std::sort(results.begin(), results.end(), compareByJobId);
 
@@ -300,9 +301,9 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                 penalties[i] = results[i].penalty;
             }
 
-            std::cout << "hash end" << endl;
+            // std::cout << "hash end" << endl;
         } else {
-            printf("I am %d from group %d\n",omp_get_thread_num(), omp_get_ancestor_thread_num(1));
+            // printf("I am %d from group %d\n",omp_get_thread_num(), omp_get_ancestor_thread_num(1));
             MPI_Status status;
             // receive my initial job
             JOB_t my_job;
@@ -321,10 +322,10 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                 STOP = my_job.i;
             }
 
-            std::cout << "all job done" << endl;
+            // std::cout << "all job done" << endl;
         }
 
-        std::cout << "pargma single end" << endl;
+        // std::cout << "pargma single end" << endl;
     }
 
     return alignmentHash;
