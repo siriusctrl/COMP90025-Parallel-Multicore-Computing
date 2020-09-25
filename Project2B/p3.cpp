@@ -242,13 +242,11 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             
             
             // keep a list of whether each worker is done
-            int n_done = 0;
-            int n_worker = size;
+            int finished = 0;
+            int workers = size;
 
-            for (int i = 0; i < size; i++)
-            {
-                if (!jobs.empty())
-                {
+            for (int i = 0; i < size; i++) {
+                if (!jobs.empty()) {
                     // get the job
                     JOB_t job = jobs.front();
                     jobs.pop();
@@ -258,17 +256,14 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                     // ask the worker to stop
                     JOB_t job = {STOP_SYMBOL, STOP_SYMBOL, STOP_SYMBOL};
                     MPI_Send(&job, 1, MPI_JOB, i, JOB_DISTRIBUTION_TAG, comm);
-                    n_done++;
+                    finished++;
                 }
             }
 
             MPI_Status status;
             vector<RES_t> results = {};
 
-            while (n_done < n_worker)
-            {   
-                cout << n_done << endl;
-
+            while (finished < workers) {
                 RES_t temp;
                 MPI_Recv(&temp, 1, MPI_RESULT, MPI_ANY_SOURCE, RESULT_COLLECTION_TAG, comm, &status);
                 // cout << "rank-" << status.MPI_SOURCE << "result:" << temp.penalty << " " << temp.id << " " << temp.problemhash << endl;
@@ -289,7 +284,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                     // ask the worker to stop
                     JOB_t job = {STOP_SYMBOL, STOP_SYMBOL, STOP_SYMBOL};
                     MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, JOB_DISTRIBUTION_TAG, comm);
-                    n_done++;
+                    finished++;
                 }
             }
 
@@ -421,8 +416,8 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     }
 
 
-    const int TILE_WIDTH {(int)ceil((1.0 * m) / n_threads)};
-    const int TILE_LENGTH {(int)ceil((1.0 * n) / n_threads)};
+    const int TILE_WIDTH {(int)ceil((1.0 * m) / (n_threads*2))};
+    const int TILE_LENGTH {(int)ceil((1.0 * n) / (n_threads*2))};
 
     const int W_TILES {(int)ceil((1.0 * m) / TILE_WIDTH)};
     const int H_TILES {(int)ceil((1.0 * n) / TILE_LENGTH)};
