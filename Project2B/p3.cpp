@@ -167,7 +167,7 @@ inline int min3(int a, int b, int c)
     //     return c;
     // }
 
-    return min(min(a, b), c)
+    return min(min(a, b), c);
 }
 
 // equivalent of  int *dp[width] = new int[height][width]
