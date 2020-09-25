@@ -237,38 +237,48 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                 for (int j = 0; j < i; j++)
                 {
                     jobs.push({i, j, job_id++});
-
                     // jobs.push_back({(seq_length[i/10000])*(seq_length[j]/10000), {i, j, job_id++}});
                 }
             }
 
             // send the initial job
             MPI_Datatype MPI_JOB = create_MPI_JOB();
+            // keep distributed the work
+            MPI_Datatype MPI_RESULT = create_MPI_RESULT();
+            
+            
+            // keep a list of whether each worker is done
+            int n_done = 0;
+            int n_worker = size;
 
             for (int i = 0; i < size; i++)
             {
-                // get the job
-                JOB_t job = jobs.front();
-                jobs.pop();
-                // send to worker i
-                MPI_Send(&job, 1, MPI_JOB, i, JOB_DISTRIBUTION_TAG, comm);
+                if (!jobs.empty())
+                {
+                    // get the job
+                    JOB_t job = jobs.front();
+                    jobs.pop();
+                    // send to worker i
+                    MPI_Send(&job, 1, MPI_JOB, i, JOB_DISTRIBUTION_TAG, comm);
+                } else {
+                    // ask the worker to stop
+                    JOB_t job = {STOP_SYMBOL, STOP_SYMBOL, STOP_SYMBOL};
+                    MPI_Send(&job, 1, MPI_JOB, i, JOB_DISTRIBUTION_TAG, comm);
+                    n_done++;
+                }
             }
 
-            // keep a list of whether each worker is done
-            vector<bool> n_done = {};
-            int n_woker = size;
-
-            // keep distributed the work
-            MPI_Datatype MPI_RESULT = create_MPI_RESULT();
             MPI_Status status;
             vector<RESULT_t> results = {};
 
-            while (n_done.size() < n_woker)
-            {
+            while (n_done < n_worker)
+            {   
+                cout << n_done << endl;
+
                 RESULT_t temp;
                 MPI_Recv(&temp, 1, MPI_RESULT, MPI_ANY_SOURCE, RESULT_COLLECTION_TAG, comm, &status);
                 // cout << "rank-" << status.MPI_SOURCE << "result:" << temp.penalty << " " << temp.id << " " << temp.problemhash << endl;
-                
+
                 results.push_back(temp);
                 // if there are still jobs to do
                 if (!jobs.empty())
@@ -285,7 +295,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                     // ask the worker to stop
                     JOB_t job = {STOP_SYMBOL, STOP_SYMBOL, STOP_SYMBOL};
                     MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, JOB_DISTRIBUTION_TAG, comm);
-                    n_done.push_back(true);
+                    n_done++;
                 }
             }
 
