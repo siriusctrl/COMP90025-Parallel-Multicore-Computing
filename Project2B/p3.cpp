@@ -98,9 +98,9 @@ int main(int argc, char **argv)
 #include <algorithm>
 #include <queue>
 
-int job_distribute_tag = 0;
-int result_collect_tag = 1;
-int STOP_SYMBOL = -9;
+constexpr int JOB_DISTRIBUTION_TAG {0};
+constexpr int RESULT_COLLECTION_TAG = 1;
+constexpr int STOP_SYMBOL = -9;
 int n_threads = 16;
 
 // define the type for a job
@@ -154,20 +154,18 @@ inline bool compareByJobId(const RESULT_t &a, const RESULT_t &b)
 
 inline int min3(int a, int b, int c)
 {
-    // if (a <= b && a <= c)
-    // {
-    //     return a;
-    // }
-    // else if (b <= a && b <= c)
-    // {
-    //     return b;
-    // }
-    // else
-    // {
-    //     return c;
-    // }
-
-    return min(min(a, b), c);
+    if (a <= b && a <= c)
+    {
+        return a;
+    }
+    else if (b <= a && b <= c)
+    {
+        return b;
+    }
+    else
+    {
+        return c;
+    }
 }
 
 // equivalent of  int *dp[width] = new int[height][width]
@@ -224,9 +222,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
         MPI_Bcast(buffer, seq_length[i], MPI_CHAR, root, comm);
     }
 
-    omp_set_nested(1); /* make sure nested parallism is on */
-    // int group1 = 1;
-    // int group2 = n_threads - group1;
+    // omp_set_nested(1);
     n_threads--;
 
     #pragma omp parallel default(shared) num_threads(2)
@@ -255,7 +251,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                 JOB_t job = jobs.front();
                 jobs.pop();
                 // send to worker i
-                MPI_Send(&job, 1, MPI_JOB, i, job_distribute_tag, comm);
+                MPI_Send(&job, 1, MPI_JOB, i, JOB_DISTRIBUTION_TAG, comm);
             }
 
             // keep a list of whether each worker is done
@@ -270,7 +266,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             while (n_done.size() < n_woker)
             {
                 RESULT_t temp;
-                MPI_Recv(&temp, 1, MPI_RESULT, MPI_ANY_SOURCE, result_collect_tag, comm, &status);
+                MPI_Recv(&temp, 1, MPI_RESULT, MPI_ANY_SOURCE, RESULT_COLLECTION_TAG, comm, &status);
                 // cout << "rank-" << status.MPI_SOURCE << "result:" << temp.penalty << " " << temp.id << " " << temp.problemhash << endl;
                 
                 results.push_back(temp);
@@ -281,14 +277,14 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                     JOB_t job = jobs.front();
                     jobs.pop();
                     // send to worker i
-                    MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, job_distribute_tag, comm);
+                    MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, JOB_DISTRIBUTION_TAG, comm);
                     // if there are nothing to do
                 }
                 else
                 {
                     // ask the worker to stop
                     JOB_t job = {STOP_SYMBOL, STOP_SYMBOL, STOP_SYMBOL};
-                    MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, job_distribute_tag, comm);
+                    MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, JOB_DISTRIBUTION_TAG, comm);
                     n_done.push_back(true);
                 }
             }
@@ -310,7 +306,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             // receive my initial job
             JOB_t my_job;
             MPI_Datatype MPI_JOB = create_MPI_JOB();
-            MPI_Recv(&my_job, 1, MPI_JOB, root, job_distribute_tag, comm, &status);
+            MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
             // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
             int STOP = my_job.i;
 
@@ -318,8 +314,8 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             {
                 RESULT_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, pxy, pgap);
                 MPI_Datatype MPI_RESULT = create_MPI_RESULT();
-                MPI_Send(&result, 1, MPI_RESULT, root, result_collect_tag, comm);
-                MPI_Recv(&my_job, 1, MPI_JOB, root, job_distribute_tag, comm, &status);
+                MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
+                MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
                 // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
                 STOP = my_job.i;
             }
@@ -365,7 +361,7 @@ void do_MPI_task(int rank)
     // receive my initial job
     JOB_t my_job;
     MPI_Datatype MPI_JOB = create_MPI_JOB();
-    MPI_Recv(&my_job, 1, MPI_JOB, root, job_distribute_tag, comm, &status);
+    MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
     // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
     int STOP = my_job.i;
 
@@ -373,9 +369,9 @@ void do_MPI_task(int rank)
     {
         RESULT_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, misMatchPenalty, gapPenalty);
         MPI_Datatype MPI_RESULT = create_MPI_RESULT();
-        MPI_Send(&result, 1, MPI_RESULT, root, result_collect_tag, comm);
+        MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
 
-        MPI_Recv(&my_job, 1, MPI_JOB, root, job_distribute_tag, comm, &status);
+        MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
         // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
         STOP = my_job.i;
     }
@@ -451,9 +447,9 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
                     }
                     else
                     {
-                        dp[ii][jj] = min3(dp[ii - 1][jj - 1] + pxy,
-                                          dp[ii - 1][jj] + pgap,
-                                          dp[ii][jj - 1] + pgap);
+                        dp[ii][jj] = min(dp[ii - 1][jj - 1] + pxy,
+                                        min(dp[ii - 1][jj] + pgap,
+                                          dp[ii][jj - 1] + pgap));
                     }
                 }
             }
