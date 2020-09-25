@@ -178,8 +178,7 @@ void do_MPI_task(int rank)
 
 // function to find out the minimum penalty
 // return the minimum penalty and put the aligned sequences in xans and yans
-int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, int *xans, int *yans)
-{
+int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, int *xans, int *yans) {
 	
 	int i, j; // intialising variables
 

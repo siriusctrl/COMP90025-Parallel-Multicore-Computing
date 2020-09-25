@@ -103,6 +103,11 @@ constexpr int RESULT_COLLECTION_TAG = 1;
 constexpr int STOP_SYMBOL = -9;
 int n_threads = 16;
 
+// MPI_Datatype MPI_JOB = create_MPI_JOB();
+// MPI_Datatype MPI_RESULT = create_MPI_RESULT();
+MPI_Datatype MPI_JOB;
+MPI_Datatype MPI_RESULT;
+
 // define the type for a job
 typedef struct {
     int i, j, id;
@@ -111,11 +116,10 @@ typedef struct {
 // define the type for a result
 typedef struct {
     int penalty, id;
-    char problemhash[129];
+    char hash[129];
 } RES_t;
 
-inline MPI_Datatype create_MPI_JOB()
-{
+inline MPI_Datatype create_MPI_JOB() {
     // define the job type for MPI
     MPI_Datatype MPI_JOB;
     MPI_Type_contiguous(3, MPI_INT, &MPI_JOB);
@@ -123,54 +127,31 @@ inline MPI_Datatype create_MPI_JOB()
     return MPI_JOB;
 }
 
-inline MPI_Datatype create_MPI_RESULT()
-{
+inline MPI_Datatype create_MPI_RESULT() {
     MPI_Datatype MPI_RESULT;
-    int blen[3];
-    MPI_Aint array_of_displacements[3];
+    int block_len[3];
+    MPI_Aint displacement[3];
     MPI_Datatype oldtypes[3];
-    blen[0] = 1;
-    array_of_displacements[0] = offsetof(RES_t, penalty);
+    block_len[0] = 1;
+    displacement[0] = offsetof(RES_t, penalty);
     oldtypes[0] = MPI_INT;
-    blen[1] = 1;
-    array_of_displacements[1] = offsetof(RES_t, id);
+    block_len[1] = 1;
+    displacement[1] = offsetof(RES_t, id);
     oldtypes[1] = MPI_INT;
-    blen[2] = 129;
-    array_of_displacements[2] = offsetof(RES_t, problemhash);
+    block_len[2] = 129;
+    displacement[2] = offsetof(RES_t, hash);
     oldtypes[2] = MPI_CHAR;
-    MPI_Type_create_struct(3, blen, array_of_displacements, oldtypes, &MPI_RESULT);
+    MPI_Type_create_struct(3, block_len, displacement, oldtypes, &MPI_RESULT);
     MPI_Type_commit(&MPI_RESULT);
     return MPI_RESULT;
 }
 
 inline RES_t do_job(std::string x, std::string y, int job_id, int misMatchPenalty, int gapPenalty);
 
-inline bool compareByJobId(const RES_t &a, const RES_t &b)
-{
-    return a.id < b.id;
-}
-
-inline int min3(int a, int b, int c)
-{
-    if (a <= b && a <= c)
-    {
-        return a;
-    }
-    else if (b <= a && b <= c)
-    {
-        return b;
-    }
-    else
-    {
-        return c;
-    }
-}
-
 // equivalent of  int *dp[width] = new int[height][width]
 // but works for width not known at compile time.
 // (Delete structure by  delete[] dp[0]; delete[] dp;)
-inline int **new2d(int width, int height)
-{
+inline int **new2d(int width, int height) {
     int **dp = new int *[width];
     size_t size = width;
     size *= height;
@@ -194,27 +175,26 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                                 int *penalties)
 {
 
+    MPI_JOB = create_MPI_JOB();            
+    MPI_RESULT = create_MPI_RESULT();
+
     std::string alignmentHash = "";
 
     int size;
     MPI_Comm_size(comm, &size);
 
-    // Broadcast the 3 configuration number
-    int config[3] = {k, pxy, pgap}; // k, pxy, pgap
-    MPI_Bcast(config, 3, MPI_INT, root, comm);
+    int meta[3] = {k, pxy, pgap}; // k, pxy, pgap
+    MPI_Bcast(meta, 3, MPI_INT, root, comm);
 
-    // Broadcast the sequence length list
     int seq_length[k];
 
-    for (int i = 0; i < k; ++i)
-    {
+    for (int i = 0; i < k; ++i) {
         seq_length[i] = genes[i].length();
     }
     MPI_Bcast(seq_length, k, MPI_INT, root, comm);
 
     // Broadcast the sequences
-    for (int i = 0; i < k; i++)
-    {
+    for (int i = 0; i < k; i++) {
         char buffer[seq_length[i]];
         memcpy(buffer, genes[i].c_str(), seq_length[i]);
         MPI_Bcast(buffer, seq_length[i], MPI_CHAR, root, comm);
@@ -226,7 +206,6 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
     #pragma omp parallel default(shared) num_threads(2)
     {
         if (omp_get_thread_num() == 0) {
-            // create job id (#cell, <i, j, job-id>)
             queue<JOB_t> jobs;
             int job_id = 0;
             for (int i = 1; i < k; i++) {
@@ -234,12 +213,6 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                     jobs.push({i, j, job_id++});
                 }
             }
-
-            // send the initial job
-            MPI_Datatype MPI_JOB = create_MPI_JOB();
-            // keep distributed the work
-            MPI_Datatype MPI_RESULT = create_MPI_RESULT();
-            
             
             // keep a list of whether each worker is done
             int finished = 0;
@@ -266,21 +239,17 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             while (finished < workers) {
                 RES_t temp;
                 MPI_Recv(&temp, 1, MPI_RESULT, MPI_ANY_SOURCE, RESULT_COLLECTION_TAG, comm, &status);
-                // cout << "rank-" << status.MPI_SOURCE << "result:" << temp.penalty << " " << temp.id << " " << temp.problemhash << endl;
 
                 results.push_back(temp);
                 // if there are still jobs to do
-                if (!jobs.empty())
-                {
+                if (!jobs.empty()) {
                     // get the job
                     JOB_t job = jobs.front();
                     jobs.pop();
                     // send to worker i
                     MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, JOB_DISTRIBUTION_TAG, comm);
                     // if there are nothing to do
-                }
-                else
-                {
+                } else {
                     // ask the worker to stop
                     JOB_t job = {STOP_SYMBOL, STOP_SYMBOL, STOP_SYMBOL};
                     MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, JOB_DISTRIBUTION_TAG, comm);
@@ -288,107 +257,93 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                 }
             }
 
-            // std::cout << "while end" << endl;
+            // re-order the job into correct order
+            std::sort(results.begin(), results.end(), [](auto const &a, auto const &b) {
+                return a.id < b.id;
+            });
 
-            std::sort(results.begin(), results.end(), compareByJobId);
-
-            for (int i = 0; i < results.size(); ++i)
-            {
-                alignmentHash = sw::sha512::calculate(alignmentHash.append(results[i].problemhash));
+            for (int i = 0; i < results.size(); ++i) {
+                alignmentHash = sw::sha512::calculate(alignmentHash.append(results[i].hash));
                 penalties[i] = results[i].penalty;
             }
-
-            // std::cout << "hash end" << endl;
         } else {
-            // printf("I am %d from group %d\n",omp_get_thread_num(), omp_get_ancestor_thread_num(1));
             MPI_Status status;
             // receive my initial job
             JOB_t my_job;
-            MPI_Datatype MPI_JOB = create_MPI_JOB();
             MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
-            // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
+
             int STOP = my_job.i;
 
             uint64_t start, end, start1, end1;
-            start = GetTimeStamp();
-            while (STOP != STOP_SYMBOL)
-            {
+            // start = GetTimeStamp();
+            while (STOP != STOP_SYMBOL) {
                 RES_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, pxy, pgap);
-                MPI_Datatype MPI_RESULT = create_MPI_RESULT();
                 MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
                 MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
-                // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
                 STOP = my_job.i;
             }
-            end = GetTimeStamp();
-            cout << "rank[" << 0 << "] computes: " << end - start << endl;
-
-            // std::cout << "all job done" << endl;
+            // end = GetTimeStamp();
+            // cout << "rank[" << 0 << "] computes: " << end - start << endl;
         }
-
-        // std::cout << "pargma single end" << endl;
     }
+
+    MPI_Type_free(&MPI_JOB);
+    MPI_Type_free(&MPI_RESULT);
 
     return alignmentHash;
 }
 
 // called for all tasks with rank!=root
 // do stuff for each MPI task based on rank
-void do_MPI_task(int rank)
-{
+void do_MPI_task(int rank) {
     MPI_Status status;
 
-    // receive the configuration
-    int config[3]; // k, pxy, pgap
-    MPI_Bcast(config, 3, MPI_INT, root, comm);
+    int meta[3]; // k, pxy, pgap
+    MPI_Bcast(meta, 3, MPI_INT, root, comm);
 
-    int misMatchPenalty = config[1];
-    int gapPenalty = config[2];
-    int k = config[0];
+    int misMatchPenalty = meta[1];
+    int gapPenalty = meta[2];
+    int k = meta[0];
 
     // receive the sequneces length list
     int seq_length[k];
     MPI_Bcast(seq_length, k, MPI_INT, root, comm);
 
+    MPI_JOB = create_MPI_JOB();            
+    MPI_RESULT = create_MPI_RESULT();
+
     // receive the gene sequences
     string genes[k];
-    for (int i = 0; i < k; i++)
-    {
+    for (int i = 0; i < k; i++) {
         char buffer[seq_length[i] + 1];
         MPI_Bcast(buffer, seq_length[i], MPI_CHAR, root, comm);
         buffer[seq_length[i]] = '\0';
         genes[i] = string(buffer, seq_length[i]);
-        // cout << "rank " << rank << "  " << genes[i] << endl;
     }
 
     // receive my initial job
     JOB_t my_job;
-    MPI_Datatype MPI_JOB = create_MPI_JOB();
     MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
-    // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
     int STOP = my_job.i;
 
     uint64_t start, end, start1, end1;
-    start = GetTimeStamp();
-    while (STOP != STOP_SYMBOL)
-    {
+    // start = GetTimeStamp();
+    while (STOP != STOP_SYMBOL) {
         RES_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, misMatchPenalty, gapPenalty);
-        MPI_Datatype MPI_RESULT = create_MPI_RESULT();
         MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
-
         MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
-        // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
         STOP = my_job.i;
     }
+    // end = GetTimeStamp();
+    // cout << "rank[" << rank << "] computes: " << end - start << endl;
 
-    end = GetTimeStamp();
-    cout << "rank[" << rank << "] computes: " << end - start << endl;
+    MPI_Type_free(&MPI_JOB);
+    MPI_Type_free(&MPI_RESULT);
 }
 
 // function to find out the minimum penalty
 // return the minimum penalty and put the aligned sequences in xans and yans
-inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, int *xans, int *yans)
-{
+inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, int *xans, int *yans) {
 
     int i, j; // intialising variables
 
@@ -450,7 +405,6 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
         }
     }
 
-    // maximum possible length
     int l = n + m;
 
     i = m;
@@ -489,12 +443,14 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
         }
     }
 
-    int x_diff = xpos - i, y_diff = ypos - j;
+    int x_offset { xpos - i }, y_offset {ypos - j};
+
+    // try to parallel the reconstruction step
 
     #pragma omp parallel for
     for (int ii = i; ii > 0; --ii)
     {
-        xans[ii + x_diff] = (int)x[ii - 1];
+        xans[ii + x_offset] = (int)x[ii - 1];
     }
 
     #pragma omp parallel for
@@ -504,7 +460,7 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
 
     #pragma omp parallel for
     for (int jj = j; jj > 0; --jj) {
-        yans[jj + y_diff] = (int)y[jj - 1];
+        yans[jj + y_offset] = (int)y[jj - 1];
     }
 
     #pragma omp parallel for
@@ -552,12 +508,12 @@ inline RES_t do_job(std::string gene1, std::string gene2, int job_id, int misMat
     // alignmentHash = hash(alignmentHash ++ hash(hash(align1)++hash(align2)))
     std::string align1hash = sw::sha512::calculate(align1);
     std::string align2hash = sw::sha512::calculate(align2);
-    std::string problemhash = sw::sha512::calculate(align1hash.append(align2hash));
+    std::string hash = sw::sha512::calculate(align1hash.append(align2hash));
 
     RES_t result;
     result.penalty = penalty;
     result.id = job_id;
-    strcpy(result.problemhash, problemhash.c_str());
+    strcpy(result.hash, hash.c_str());
 
     return result;
 }
