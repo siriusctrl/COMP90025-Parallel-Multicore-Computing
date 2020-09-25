@@ -3,7 +3,7 @@
 #SBATCH --error=mpi-4n16c-%j.err
 #SBATCH --output=mpi-4n16c-%j.out
 #SBATCH --partition=snowy
-#SBATCH --time=0:5:00
+#SBATCH --time=0:05:00
 #SBATCH --nodes=4
 #SBATCH --cpus-per-task=16
 #SBATCH --ntasks-per-node=1

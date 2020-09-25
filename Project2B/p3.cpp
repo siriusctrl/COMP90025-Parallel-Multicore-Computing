@@ -154,18 +154,20 @@ inline bool compareByJobId(const RESULT_t &a, const RESULT_t &b)
 
 inline int min3(int a, int b, int c)
 {
-    if (a <= b && a <= c)
-    {
-        return a;
-    }
-    else if (b <= a && b <= c)
-    {
-        return b;
-    }
-    else
-    {
-        return c;
-    }
+    // if (a <= b && a <= c)
+    // {
+    //     return a;
+    // }
+    // else if (b <= a && b <= c)
+    // {
+    //     return b;
+    // }
+    // else
+    // {
+    //     return c;
+    // }
+
+    return min(min(a, b), c)
 }
 
 // equivalent of  int *dp[width] = new int[height][width]
