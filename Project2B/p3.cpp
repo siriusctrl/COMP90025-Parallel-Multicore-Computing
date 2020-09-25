@@ -102,6 +102,8 @@ constexpr int JOB_DISTRIBUTION_TAG {0};
 constexpr int RESULT_COLLECTION_TAG = 1;
 constexpr int STOP_SYMBOL = -9;
 int n_threads = 16;
+MPI_Datatype MPI_JOB;
+MPI_Datatype MPI_RESULT;
 
 // define the type for a job
 typedef struct
@@ -113,11 +115,10 @@ typedef struct
 typedef struct
 {
     int penalty, id;
-    char problemhash[129];
+    char problem_hash[129];
 } RESULT_t;
 
-inline MPI_Datatype create_MPI_JOB()
-{
+inline MPI_Datatype create_MPI_JOB() {
     // define the job type for MPI
     MPI_Datatype MPI_JOB;
     MPI_Type_contiguous(3, MPI_INT, &MPI_JOB);
@@ -125,35 +126,32 @@ inline MPI_Datatype create_MPI_JOB()
     return MPI_JOB;
 }
 
-inline MPI_Datatype create_MPI_RESULT()
-{
+inline MPI_Datatype create_MPI_RESULT() {
     MPI_Datatype MPI_RESULT;
-    int blen[3];
-    MPI_Aint array_of_displacements[3];
-    MPI_Datatype oldtypes[3];
-    blen[0] = 1;
-    array_of_displacements[0] = offsetof(RESULT_t, penalty);
-    oldtypes[0] = MPI_INT;
-    blen[1] = 1;
-    array_of_displacements[1] = offsetof(RESULT_t, id);
-    oldtypes[1] = MPI_INT;
-    blen[2] = 129;
-    array_of_displacements[2] = offsetof(RESULT_t, problemhash);
-    oldtypes[2] = MPI_CHAR;
-    MPI_Type_create_struct(3, blen, array_of_displacements, oldtypes, &MPI_RESULT);
+    int block_len_arry[3];
+    MPI_Aint displacements[3];
+    MPI_Datatype old[3];
+    block_len_arry[0] = 1;
+    displacements[0] = offsetof(RESULT_t, penalty);
+    old[0] = MPI_INT;
+    block_len_arry[1] = 1;
+    displacements[1] = offsetof(RESULT_t, id);
+    old[1] = MPI_INT;
+    block_len_arry[2] = 129;
+    displacements[2] = offsetof(RESULT_t, problem_hash);
+    old[2] = MPI_CHAR;
+    MPI_Type_create_struct(3, block_len_arry, displacements, old, &MPI_RESULT);
     MPI_Type_commit(&MPI_RESULT);
     return MPI_RESULT;
 }
 
 inline RESULT_t do_job(std::string x, std::string y, int job_id, int misMatchPenalty, int gapPenalty);
 
-inline bool compareByJobId(const RESULT_t &a, const RESULT_t &b)
-{
+inline bool Job_CMP(const RESULT_t &a, const RESULT_t &b) {
     return a.id < b.id;
 }
 
-inline int min3(int a, int b, int c)
-{
+inline int min3(int a, int b, int c) {
     if (a <= b && a <= c)
     {
         return a;
@@ -171,8 +169,7 @@ inline int min3(int a, int b, int c)
 // equivalent of  int *dp[width] = new int[height][width]
 // but works for width not known at compile time.
 // (Delete structure by  delete[] dp[0]; delete[] dp;)
-inline int **new2d(int width, int height)
-{
+inline int **new2d(int width, int height) {
     int **dp = new int *[width];
     size_t size = width;
     size *= height;
@@ -201,22 +198,23 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
     int size;
     MPI_Comm_size(comm, &size);
 
-    // Broadcast the 3 configuration number
     int config[3] = {k, pxy, pgap}; // k, pxy, pgap
     MPI_Bcast(config, 3, MPI_INT, root, comm);
 
     // Broadcast the sequence length list
     int seq_length[k];
 
-    for (int i = 0; i < k; ++i)
-    {
+    for (int i = 0; i < k; ++i) {
         seq_length[i] = genes[i].length();
     }
+
     MPI_Bcast(seq_length, k, MPI_INT, root, comm);
 
+    MPI_JOB = create_MPI_JOB();
+    MPI_RESULT = create_MPI_RESULT();
+
     // Broadcast the sequences
-    for (int i = 0; i < k; i++)
-    {
+    for (int i = 0; i < k; i++) {
         char buffer[seq_length[i]];
         memcpy(buffer, genes[i].c_str(), seq_length[i]);
         MPI_Bcast(buffer, seq_length[i], MPI_CHAR, root, comm);
@@ -232,10 +230,8 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             // create job id (#cell, <i, j, job-id>)
             queue<JOB_t> jobs;
             int job_id = 0;
-            for (int i = 1; i < k; i++)
-            {
-                for (int j = 0; j < i; j++)
-                {
+            for (int i = 1; i < k; i++) {
+                for (int j = 0; j < i; j++) {
                     jobs.push({i, j, job_id++});
                     // jobs.push_back({(seq_length[i/10000])*(seq_length[j]/10000), {i, j, job_id++}});
                 }
@@ -251,10 +247,8 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             int n_done = 0;
             int n_worker = size;
 
-            for (int i = 0; i < size; i++)
-            {
-                if (!jobs.empty())
-                {
+            for (int i = 0; i < size; i++) {
+                if (!jobs.empty()) {
                     // get the job
                     JOB_t job = jobs.front();
                     jobs.pop();
@@ -271,27 +265,20 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             MPI_Status status;
             vector<RESULT_t> results = {};
 
-            while (n_done < n_worker)
-            {   
-                cout << n_done << endl;
-
+            while (n_done < n_worker) {   
                 RESULT_t temp;
                 MPI_Recv(&temp, 1, MPI_RESULT, MPI_ANY_SOURCE, RESULT_COLLECTION_TAG, comm, &status);
-                // cout << "rank-" << status.MPI_SOURCE << "result:" << temp.penalty << " " << temp.id << " " << temp.problemhash << endl;
-
                 results.push_back(temp);
+
                 // if there are still jobs to do
-                if (!jobs.empty())
-                {
+                if (!jobs.empty()) {
                     // get the job
                     JOB_t job = jobs.front();
                     jobs.pop();
                     // send to worker i
                     MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, JOB_DISTRIBUTION_TAG, comm);
                     // if there are nothing to do
-                }
-                else
-                {
+                } else {
                     // ask the worker to stop
                     JOB_t job = {STOP_SYMBOL, STOP_SYMBOL, STOP_SYMBOL};
                     MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, JOB_DISTRIBUTION_TAG, comm);
@@ -301,11 +288,10 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
 
             // std::cout << "while end" << endl;
 
-            std::sort(results.begin(), results.end(), compareByJobId);
+            std::sort(results.begin(), results.end(), Job_CMP);
 
-            for (int i = 0; i < results.size(); ++i)
-            {
-                alignmentHash = sw::sha512::calculate(alignmentHash.append(results[i].problemhash));
+            for (int i = 0; i < results.size(); ++i) {
+                alignmentHash = sw::sha512::calculate(alignmentHash.append(results[i].problem_hash));
                 penalties[i] = results[i].penalty;
             }
 
@@ -315,7 +301,6 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             MPI_Status status;
             // receive my initial job
             JOB_t my_job;
-            MPI_Datatype MPI_JOB = create_MPI_JOB();
             MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
             // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
             int STOP = my_job.i;
@@ -325,7 +310,6 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             while (STOP != STOP_SYMBOL)
             {
                 RESULT_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, pxy, pgap);
-                MPI_Datatype MPI_RESULT = create_MPI_RESULT();
                 MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
                 MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
                 // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
@@ -333,12 +317,11 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             }
             end = GetTimeStamp();
             cout << "rank[" << 0 << "] computes: " << end - start << endl;
-
-            // std::cout << "all job done" << endl;
         }
-
-        // std::cout << "pargma single end" << endl;
     }
+
+    MPI_Type_free(&MPI_JOB);
+    MPI_Type_free(&MPI_RESULT);
 
     return alignmentHash;
 }
@@ -361,6 +344,9 @@ void do_MPI_task(int rank)
     int seq_length[k];
     MPI_Bcast(seq_length, k, MPI_INT, root, comm);
 
+    MPI_JOB = create_MPI_JOB();
+    MPI_RESULT = create_MPI_RESULT();
+
     // receive the gene sequences
     string genes[k];
     for (int i = 0; i < k; i++)
@@ -374,9 +360,7 @@ void do_MPI_task(int rank)
 
     // receive my initial job
     JOB_t my_job;
-    MPI_Datatype MPI_JOB = create_MPI_JOB();
     MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
-    // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
     int STOP = my_job.i;
 
     uint64_t start, end, start1, end1;
@@ -384,16 +368,16 @@ void do_MPI_task(int rank)
     while (STOP != STOP_SYMBOL)
     {
         RESULT_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, misMatchPenalty, gapPenalty);
-        MPI_Datatype MPI_RESULT = create_MPI_RESULT();
         MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
-
         MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
         // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
         STOP = my_job.i;
     }
-
     end = GetTimeStamp();
     cout << "rank[" << rank << "] computes: " << end - start << endl;
+
+    MPI_Type_free(&MPI_JOB);
+    MPI_Type_free(&MPI_RESULT);
 }
 
 // function to find out the minimum penalty
@@ -434,9 +418,11 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
         dp[0][i] = i * pgap;
     }
 
+    int thread_weight = n_threads * 4;
+
     // calculating the minimum penalty with the tiling technique in an anti-diagonal version
-    int tile_row_size = (int)ceil((1.0 * m) / n_threads); // Number of dp elements in row of each tile
-    int tile_col_size = (int)ceil((1.0 * n) / n_threads); // Number of dp elements in column of each tile
+    int tile_row_size = (int)ceil((1.0 * m) / thread_weight); // Number of dp elements in row of each tile
+    int tile_col_size = (int)ceil((1.0 * n) / thread_weight); // Number of dp elements in column of each tile
 
     //    int tile_row_size = 256; // Number of dp elements in row of each tile
     //    int tile_col_size = 256; // Number of dp elements in column of each tile
@@ -596,12 +582,12 @@ inline RESULT_t do_job(std::string gene1, std::string gene2, int job_id, int mis
     // alignmentHash = hash(alignmentHash ++ hash(hash(align1)++hash(align2)))
     std::string align1hash = sw::sha512::calculate(align1);
     std::string align2hash = sw::sha512::calculate(align2);
-    std::string problemhash = sw::sha512::calculate(align1hash.append(align2hash));
+    std::string problem_hash = sw::sha512::calculate(align1hash.append(align2hash));
 
     RESULT_t result;
     result.penalty = penalty;
     result.id = job_id;
-    strcpy(result.problemhash, problemhash.c_str());
+    strcpy(result.problem_hash, problem_hash.c_str());
 
     return result;
 }
