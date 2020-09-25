@@ -396,7 +396,7 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     int m = x.length(); // length of gene1
     int n = y.length(); // length of gene2
 
-    // bool pr = true;
+    bool pr = true;
 
     // table for storing optimal substructure answers
     omp_set_num_threads(n_threads);
@@ -411,10 +411,10 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     #pragma omp parallel for
     for (i = 0; i <= m; ++i)
     {
-        // if (pr) {
-        //     cout << "number of threads" << omp_get_num_threads() << endl;
-        //     pr = false;
-        // }
+        if (pr) {
+            cout << "number of threads" << omp_get_num_threads() << endl;
+            pr = false;
+        }
 
         dp[i][0] = i * pgap;
     }

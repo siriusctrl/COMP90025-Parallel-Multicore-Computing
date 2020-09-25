@@ -1,7 +1,7 @@
-rank[3] computes: 50294
-rank[1] computes: 52638
-rank[2] computes: 52742
-rank[0] computes: 59635
-Time: 60475 us
+rank[0] computes: 1442
+rank[1] computes: 3982
+rank[2] computes: 4460
+rank[3] computes: 4860
+Time: 5902 us
 4d676f40ea4c1e6b79f546d8c87214c5c7c18e3e55ed0844edfdc73b82bbc9f21b0f4a2eab30b0ddb6b499b623e23e5dd598ef7a5c7175ecfc0235ac0858c20a
 5 4 9 12 14 11 11 10 11 10 20 22 16 8 15 36 38 32 24 28 22 31 30 27 22 20 22 20 20 22 16 8 15 0 22 22 
