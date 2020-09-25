@@ -222,7 +222,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
         MPI_Bcast(buffer, seq_length[i], MPI_CHAR, root, comm);
     }
 
-    // omp_set_nested(1);
+    omp_set_nested(1);
     n_threads--;
 
     #pragma omp parallel default(shared) num_threads(2)
