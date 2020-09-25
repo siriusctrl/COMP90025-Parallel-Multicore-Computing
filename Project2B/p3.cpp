@@ -104,17 +104,15 @@ constexpr int STOP_SYMBOL = -9;
 int n_threads = 16;
 
 // define the type for a job
-typedef struct
-{
+typedef struct {
     int i, j, id;
 } JOB_t;
 
 // define the type for a result
-typedef struct
-{
+typedef struct {
     int penalty, id;
     char problemhash[129];
-} RESULT_t;
+} RES_t;
 
 inline MPI_Datatype create_MPI_JOB()
 {
@@ -132,22 +130,22 @@ inline MPI_Datatype create_MPI_RESULT()
     MPI_Aint array_of_displacements[3];
     MPI_Datatype oldtypes[3];
     blen[0] = 1;
-    array_of_displacements[0] = offsetof(RESULT_t, penalty);
+    array_of_displacements[0] = offsetof(RES_t, penalty);
     oldtypes[0] = MPI_INT;
     blen[1] = 1;
-    array_of_displacements[1] = offsetof(RESULT_t, id);
+    array_of_displacements[1] = offsetof(RES_t, id);
     oldtypes[1] = MPI_INT;
     blen[2] = 129;
-    array_of_displacements[2] = offsetof(RESULT_t, problemhash);
+    array_of_displacements[2] = offsetof(RES_t, problemhash);
     oldtypes[2] = MPI_CHAR;
     MPI_Type_create_struct(3, blen, array_of_displacements, oldtypes, &MPI_RESULT);
     MPI_Type_commit(&MPI_RESULT);
     return MPI_RESULT;
 }
 
-inline RESULT_t do_job(std::string x, std::string y, int job_id, int misMatchPenalty, int gapPenalty);
+inline RES_t do_job(std::string x, std::string y, int job_id, int misMatchPenalty, int gapPenalty);
 
-inline bool compareByJobId(const RESULT_t &a, const RESULT_t &b)
+inline bool compareByJobId(const RES_t &a, const RES_t &b)
 {
     return a.id < b.id;
 }
@@ -228,16 +226,12 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
     #pragma omp parallel default(shared) num_threads(2)
     {
         if (omp_get_thread_num() == 0) {
-            // printf("I am %d from group %d\n",omp_get_thread_num(), omp_get_ancestor_thread_num(1));
             // create job id (#cell, <i, j, job-id>)
             queue<JOB_t> jobs;
             int job_id = 0;
-            for (int i = 1; i < k; i++)
-            {
-                for (int j = 0; j < i; j++)
-                {
+            for (int i = 1; i < k; i++) {
+                for (int j = 0; j < i; j++) {
                     jobs.push({i, j, job_id++});
-                    // jobs.push_back({(seq_length[i/10000])*(seq_length[j]/10000), {i, j, job_id++}});
                 }
             }
 
@@ -269,13 +263,13 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             }
 
             MPI_Status status;
-            vector<RESULT_t> results = {};
+            vector<RES_t> results = {};
 
             while (n_done < n_worker)
             {   
                 cout << n_done << endl;
 
-                RESULT_t temp;
+                RES_t temp;
                 MPI_Recv(&temp, 1, MPI_RESULT, MPI_ANY_SOURCE, RESULT_COLLECTION_TAG, comm, &status);
                 // cout << "rank-" << status.MPI_SOURCE << "result:" << temp.penalty << " " << temp.id << " " << temp.problemhash << endl;
 
@@ -324,7 +318,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             start = GetTimeStamp();
             while (STOP != STOP_SYMBOL)
             {
-                RESULT_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, pxy, pgap);
+                RES_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, pxy, pgap);
                 MPI_Datatype MPI_RESULT = create_MPI_RESULT();
                 MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
                 MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
@@ -383,7 +377,7 @@ void do_MPI_task(int rank)
     start = GetTimeStamp();
     while (STOP != STOP_SYMBOL)
     {
-        RESULT_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, misMatchPenalty, gapPenalty);
+        RES_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, misMatchPenalty, gapPenalty);
         MPI_Datatype MPI_RESULT = create_MPI_RESULT();
         MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
 
@@ -406,85 +400,63 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     int m = x.length(); // length of gene1
     int n = y.length(); // length of gene2
 
-    // bool pr = true;
-
     // table for storing optimal substructure answers
     omp_set_num_threads(n_threads);
     int **dp = new2d(m + 1, n + 1);
 
-    // remove unnecessary memset
-    //    size_t size = m + 1;
-    //    size *= n + 1;
-    //    memset (dp[0], 0, size);
-
     // intialising the table
-    #pragma omp parallel for
-    for (i = 0; i <= m; ++i)
+    #pragma omp parallel
     {
-        // if (pr) {
-        //     cout << "number of threads" << omp_get_num_threads() << endl;
-        //     pr = false;
-        // }
-
-        dp[i][0] = i * pgap;
+        #pragma omp for nowait
+        for (i = 0; i <= m; ++i)
+        {
+            dp[i][0] = i * pgap;
+        }
+        
+        #pragma omp for nowait
+        for (i = 0; i <= n; ++i)
+        {
+            dp[0][i] = i * pgap;
+        }
     }
-    #pragma omp parallel for
-    for (i = 0; i <= n; ++i)
-    {
-        dp[0][i] = i * pgap;
-    }
 
-    // calculating the minimum penalty with the tiling technique in an anti-diagonal version
-    int tile_row_size = (int)ceil((1.0 * m) / n_threads); // Number of dp elements in row of each tile
-    int tile_col_size = (int)ceil((1.0 * n) / n_threads); // Number of dp elements in column of each tile
 
-    //    int tile_row_size = 256; // Number of dp elements in row of each tile
-    //    int tile_col_size = 256; // Number of dp elements in column of each tile
-    int tile_m = (int)ceil((1.0 * m) / tile_row_size); // Number of tiles in row of the dp matrix
-    int tile_n = (int)ceil((1.0 * n) / tile_col_size); // Number of tile in column of the dp matrix
+    const int TILE_WIDTH {(int)ceil((1.0 * m) / n_threads)};
+    const int TILE_LENGTH {(int)ceil((1.0 * n) / n_threads)};
 
-    int total_diagonal = tile_m + tile_n - 1;
-    int row_min, row_max, diagonal_index, k;
-    //    cout << "tile_row_size: " << tile_row_size << ", tile_col_size: " << tile_col_size << endl;
-    //    cout << "tile_m: " << tile_m << ", tile_n: " << tile_n << endl;
-    //    cout << "total_diagonal: " << total_diagonal << endl;
-    for (diagonal_index = 1; diagonal_index <= total_diagonal; ++diagonal_index)
-    {
-        row_min = max(1, diagonal_index - tile_n + 1);
-        row_max = min(diagonal_index, tile_m);
+    const int W_TILES {(int)ceil((1.0 * m) / TILE_WIDTH)};
+    const int H_TILES {(int)ceil((1.0 * n) / TILE_LENGTH)};
+
+    const int TOTAL_LINE = W_TILES + H_TILES - 1;
+    int k;
+
+    for (int line = 1; line <= TOTAL_LINE; ++line) {
+        const int start_col = max(1, line - H_TILES + 1);
+        const int count_of_line = min(line, W_TILES);
 
         #pragma omp parallel for
-        for (k = row_min; k <= row_max; ++k)
-        {
-            int tile_row_start = 1 + (k - 1) * tile_row_size;              // index inclusive
-            int tile_row_end = min(tile_row_start + tile_row_size, m + 1); // index exclusive
-            int tile_col_start = 1 + (diagonal_index - k) * tile_col_size; // index inclusive
-            int tile_col_end = min(tile_col_start + tile_col_size, n + 1); // index exclusive
+        for (k = start_col; k <= count_of_line; ++k) {
+            int i_lb = 1 + (k - 1) * TILE_WIDTH;
+            int i_ub = min(i_lb + TILE_WIDTH, m + 1);
+            int j_lb = 1 + (line - k) * TILE_LENGTH;
+            int j_ub = min(j_lb + TILE_LENGTH, n + 1);
 
-            //            cout << "(" << tile_row_start<< "," << tile_col_start << ")" << " | ";
-            //            cout << "-> (" << tile_row_end << "," << tile_col_end << ")" << '|';
-            for (int ii = tile_row_start; ii < tile_row_end; ++ii)
-            {
-                for (int jj = tile_col_start; jj < tile_col_end; ++jj)
-                {
-                    if (x[ii - 1] == y[jj - 1])
-                    {
-                        dp[ii][jj] = dp[ii - 1][jj - 1];
-                    }
-                    else
-                    {
-                        dp[ii][jj] = min(dp[ii - 1][jj - 1] + pxy,
-                                        min(dp[ii - 1][jj] + pgap,
-                                          dp[ii][jj - 1] + pgap));
+            for (i = i_lb; i < i_ub; ++i) {
+                for (j = j_lb; j < j_ub; ++j) {
+                    if (x[i - 1] == y[j - 1]) {
+                        dp[i][j] = dp[i - 1][j - 1];
+                    } else {
+                        dp[i][j] = min(dp[i - 1][j - 1] + pxy,
+                                        min(dp[i - 1][j] + pgap,
+                                          dp[i][j - 1] + pgap));
                     }
                 }
             }
         }
-        //        cout << "n_done" << endl;
     }
 
-    // Reconstructing the solution
-    int l = n + m; // maximum possible length
+    // maximum possible length
+    int l = n + m;
 
     i = m;
     j = n;
@@ -522,8 +494,8 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
         }
     }
 
-    omp_set_num_threads(omp_get_max_threads());
     int x_diff = xpos - i, y_diff = ypos - j;
+
     #pragma omp parallel for
     for (int ii = i; ii > 0; --ii)
     {
@@ -531,23 +503,17 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     }
 
     #pragma omp parallel for
-    for (int x_pos2 = xpos - i; x_pos2 > 0; --x_pos2)
-    {
+    for (int x_pos2 = xpos - i; x_pos2 > 0; --x_pos2) {
         xans[x_pos2] = (int)'_';
     }
 
     #pragma omp parallel for
-    for (int jj = j; jj > 0; --jj)
-    {
+    for (int jj = j; jj > 0; --jj) {
         yans[jj + y_diff] = (int)y[jj - 1];
-        if (jj == 0)
-        {
-        }
     }
 
     #pragma omp parallel for
-    for (int y_pos2 = ypos - j; y_pos2 > 0; --y_pos2)
-    {
+    for (int y_pos2 = ypos - j; y_pos2 > 0; --y_pos2) {
         yans[y_pos2] = (int)'_';
     }
 
@@ -559,8 +525,7 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     return ret;
 }
 
-inline RESULT_t do_job(std::string gene1, std::string gene2, int job_id, int misMatchPenalty, int gapPenalty)
-{
+inline RES_t do_job(std::string gene1, std::string gene2, int job_id, int misMatchPenalty, int gapPenalty) {
 
     int m = gene1.length(); // length of gene1
     int n = gene2.length(); // length of gene2
@@ -569,14 +534,11 @@ inline RESULT_t do_job(std::string gene1, std::string gene2, int job_id, int mis
     int penalty = getMinimumPenalty(gene1, gene2, misMatchPenalty, gapPenalty, xans, yans);
 
     int id = 1;
-    int a;
 
     // find the start of the extra gap
-    for (a = l; a >= 1; a--)
-    {
-        if ((char)yans[a] == '_' && (char)xans[a] == '_')
-        {
-            id = a + 1;
+    for (int i = l; i >= 1; i--) {
+        if ((char)yans[i] == '_' && (char)xans[i] == '_') {
+            id = i + 1;
             break;
         }
     }
@@ -584,13 +546,12 @@ inline RESULT_t do_job(std::string gene1, std::string gene2, int job_id, int mis
     // extract the exact alignment for both string
     std::string align1 = "";
     std::string align2 = "";
-    for (a = id; a <= l; a++)
-    {
-        align1.append(1, (char)xans[a]);
+    for (int i = id; i <= l; i++) {
+        align1.append(1, (char)xans[i]);
     }
-    for (a = id; a <= l; a++)
-    {
-        align2.append(1, (char)yans[a]);
+
+    for (int i = id; i <= l; i++) {
+        align2.append(1, (char)yans[i]);
     }
 
     // alignmentHash = hash(alignmentHash ++ hash(hash(align1)++hash(align2)))
@@ -598,7 +559,7 @@ inline RESULT_t do_job(std::string gene1, std::string gene2, int job_id, int mis
     std::string align2hash = sw::sha512::calculate(align2);
     std::string problemhash = sw::sha512::calculate(align1hash.append(align2hash));
 
-    RESULT_t result;
+    RES_t result;
     result.penalty = penalty;
     result.id = job_id;
     strcpy(result.problemhash, problemhash.c_str());
