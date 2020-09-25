@@ -312,6 +312,8 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
             int STOP = my_job.i;
 
+            uint64_t start, end, start1, end1;
+            start = GetTimeStamp();
             while (STOP != STOP_SYMBOL)
             {
                 RESULT_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, pxy, pgap);
@@ -321,6 +323,8 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                 // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
                 STOP = my_job.i;
             }
+            end = GetTimeStamp();
+            cout << "rank[" << 0 << "] computes: " << end - start << endl;
 
             // std::cout << "all job done" << endl;
         }
@@ -367,6 +371,8 @@ void do_MPI_task(int rank)
     // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
     int STOP = my_job.i;
 
+    uint64_t start, end, start1, end1;
+    start = GetTimeStamp();
     while (STOP != STOP_SYMBOL)
     {
         RESULT_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, misMatchPenalty, gapPenalty);
@@ -377,6 +383,9 @@ void do_MPI_task(int rank)
         // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
         STOP = my_job.i;
     }
+
+    end = GetTimeStamp();
+    cout << "rank[" << rank << "] computes: " << end - start << endl;
 }
 
 // function to find out the minimum penalty
@@ -388,6 +397,8 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
 
     int m = x.length(); // length of gene1
     int n = y.length(); // length of gene2
+
+    // bool pr = true;
 
     // table for storing optimal substructure answers
     omp_set_num_threads(n_threads);
@@ -402,6 +413,11 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     #pragma omp parallel for
     for (i = 0; i <= m; ++i)
     {
+        // if (pr) {
+        //     cout << "number of threads" << omp_get_num_threads() << endl;
+        //     pr = false;
+        // }
+
         dp[i][0] = i * pgap;
     }
     #pragma omp parallel for
