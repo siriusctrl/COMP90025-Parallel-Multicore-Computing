@@ -418,9 +418,11 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
         dp[0][i] = i * pgap;
     }
 
+    int thread_weight = n_threads * 4;
+
     // calculating the minimum penalty with the tiling technique in an anti-diagonal version
-    int tile_row_size = (int)ceil((1.0 * m) / n_threads); // Number of dp elements in row of each tile
-    int tile_col_size = (int)ceil((1.0 * n) / n_threads); // Number of dp elements in column of each tile
+    int tile_row_size = (int)ceil((1.0 * m) / thread_weight); // Number of dp elements in row of each tile
+    int tile_col_size = (int)ceil((1.0 * n) / thread_weight); // Number of dp elements in column of each tile
 
     //    int tile_row_size = 256; // Number of dp elements in row of each tile
     //    int tile_col_size = 256; // Number of dp elements in column of each tile
