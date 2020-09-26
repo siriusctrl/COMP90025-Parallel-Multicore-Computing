@@ -147,10 +147,6 @@ inline MPI_Datatype create_MPI_RESULT() {
 
 inline RES_t do_task(std::string x, std::string y, int task_id, int misMatchPenalty, int gapPenalty);
 
-inline bool task_CMP(const RES_t &a, const RES_t &b) {
-    return a.id < b.id;
-}
-
 // equivalent of  int *dp[width] = new int[height][width]
 // but works for width not known at compile time.
 // (Delete structure by  delete[] dp[0]; delete[] dp;)
@@ -264,7 +260,9 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                 }
             }
 
-            std::sort(results.begin(), results.end(), task_CMP);
+            std::sort(results.begin(), results.end(), [](auto const &a, auto const &b) {
+                return a.id < b.id;
+            });
 
             for (int i = 0; i < results.size(); ++i) {
                 alignmentHash = sw::sha512::calculate(alignmentHash.append(results[i].problem_hash));
