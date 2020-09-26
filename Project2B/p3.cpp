@@ -424,20 +424,19 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
 
         #pragma omp parallel for
         for (k = row_min; k <= row_max; ++k) {
+            int tile_row_start = 1 + (k - 1) * TILE_WIDTH;
+            int tile_row_end = min(tile_row_start + TILE_WIDTH, m + 1);
+            int tile_col_start = 1 + (line - k) * TILE_HEIGHT;
+            int tile_col_end = min(tile_col_start + TILE_HEIGHT, n + 1);
 
-            int i_lb = 1 + (k - 1) * TILE_WIDTH;
-            int i_ub = min(i_lb + TILE_WIDTH, m + 1);
-            int j_lb = 1 + (line - k) * TILE_HEIGHT;
-            int j_ub = min(j_lb + TILE_HEIGHT, n + 1);
-
-            for (i = i_lb; i < i_ub; ++i) {
-                for (j = j_lb; j < j_ub; ++j) {
-                    if (x[i - 1] == y[j - 1]) {
-                        dp[i][j] = dp[i - 1][j - 1];
+            for (int ii = tile_row_start; ii < tile_row_end; ++ii) {
+                for (int jj = tile_col_start; jj < tile_col_end; ++jj) {
+                    if (x[ii - 1] == y[jj - 1]) {
+                        dp[ii][jj] = dp[ii - 1][jj - 1];
                     } else {
-                        dp[i][j] = min(dp[i - 1][j - 1] + pxy,
-                                        min(dp[i - 1][j] + pgap,
-                                          dp[i][j - 1] + pgap));
+                        dp[ii][jj] = min(dp[ii - 1][jj - 1] + pxy,
+                                        min(dp[ii - 1][jj] + pgap,
+                                          dp[ii][jj - 1] + pgap));
                     }
                 }
             }
