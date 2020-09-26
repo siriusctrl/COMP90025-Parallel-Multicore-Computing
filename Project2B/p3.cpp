@@ -226,11 +226,11 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
     #pragma omp parallel default(shared) num_threads(2)
     {
         if (omp_get_thread_num() == 0) {
-            queue<JOB_t> jobs;
+            queue<JOB_t> job_queue;
             int job_id = 0;
             for (int i = 1; i < k; i++) {
                 for (int j = 0; j < i; j++) {
-                    jobs.push({i, j, job_id++});
+                    job_queue.push({i, j, job_id++});
                 }
             }
 
@@ -239,49 +239,46 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             
             
             // keep a list of whether each worker is done
-            int n_done = 0;
-            int n_worker = size;
+            int finished = 0;
+            int workers = size;
 
             for (int i = 0; i < size; i++) {
-                if (!jobs.empty()) {
+                if (!job_queue.empty()) {
                     // get the job
-                    JOB_t job = jobs.front();
-                    jobs.pop();
+                    JOB_t job = job_queue.front();
+                    job_queue.pop();
                     // send to worker i
                     MPI_Send(&job, 1, MPI_JOB, i, JOB_DISTRIBUTION_TAG, comm);
                 } else {
                     // ask the worker to stop
                     JOB_t job = {STOP_SYMBOL, STOP_SYMBOL, STOP_SYMBOL};
                     MPI_Send(&job, 1, MPI_JOB, i, JOB_DISTRIBUTION_TAG, comm);
-                    n_done++;
+                    finished++;
                 }
             }
 
             MPI_Status status;
             vector<RES_t> results = {};
 
-            while (n_done < n_worker) {   
+            while (finished < workers) {   
                 RES_t temp;
                 MPI_Recv(&temp, 1, MPI_RESULT, MPI_ANY_SOURCE, RESULT_COLLECTION_TAG, comm, &status);
                 results.push_back(temp);
 
-                // if there are still jobs to do
-                if (!jobs.empty()) {
+                // if there are still job_queue to do
+                if (!job_queue.empty()) {
                     // get the job
-                    JOB_t job = jobs.front();
-                    jobs.pop();
+                    JOB_t job = job_queue.front();
+                    job_queue.pop();
                     // send to worker i
                     MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, JOB_DISTRIBUTION_TAG, comm);
-                    // if there are nothing to do
                 } else {
-                    // ask the worker to stop
+                    // tell them to stop if no more works
                     JOB_t job = {STOP_SYMBOL, STOP_SYMBOL, STOP_SYMBOL};
                     MPI_Send(&job, 1, MPI_JOB, status.MPI_SOURCE, JOB_DISTRIBUTION_TAG, comm);
-                    n_done++;
+                    finished++;
                 }
             }
-
-            // std::cout << "while end" << endl;
 
             std::sort(results.begin(), results.end(), Job_CMP);
 
@@ -289,25 +286,18 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                 alignmentHash = sw::sha512::calculate(alignmentHash.append(results[i].problem_hash));
                 penalties[i] = results[i].penalty;
             }
-
-            // std::cout << "hash end" << endl;
         } else {
-            // printf("I am %d from group %d\n",omp_get_thread_num(), omp_get_ancestor_thread_num(1));
             MPI_Status status;
             // receive my initial job
             JOB_t my_job;
             MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
-            // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
             int STOP = my_job.i;
-
             uint64_t start, end, start1, end1;
             start = GetTimeStamp();
-            while (STOP != STOP_SYMBOL)
-            {
+            while (STOP != STOP_SYMBOL) {
                 RES_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, pxy, pgap);
                 MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
                 MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
-                // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
                 STOP = my_job.i;
             }
             end = GetTimeStamp();
