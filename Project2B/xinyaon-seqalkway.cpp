@@ -128,19 +128,19 @@ inline MPI_Datatype create_MPI_TASK() {
 
 inline MPI_Datatype create_MPI_RESULT() {
     MPI_Datatype MPI_RESULT;
-    int block_len_arry[3];
+    int block_len_array[3];
     MPI_Aint displacements[3];
     MPI_Datatype old[3];
-    block_len_arry[0] = 1;
+    block_len_array[0] = 1;
     displacements[0] = offsetof(RES_t, penalty);
     old[0] = MPI_INT;
-    block_len_arry[1] = 1;
+    block_len_array[1] = 1;
     displacements[1] = offsetof(RES_t, id);
     old[1] = MPI_INT;
-    block_len_arry[2] = 129;
+    block_len_array[2] = 129;
     displacements[2] = offsetof(RES_t, problem_hash);
     old[2] = MPI_CHAR;
-    MPI_Type_create_struct(3, block_len_arry, displacements, old, &MPI_RESULT);
+    MPI_Type_create_struct(3, block_len_array, displacements, old, &MPI_RESULT);
     MPI_Type_commit(&MPI_RESULT);
     return MPI_RESULT;
 }
@@ -272,20 +272,15 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             }
         } else {
             MPI_Status status;
-            // receive my initial task
             TASK_t my_task;
             MPI_Recv(&my_task, 1, MPI_TASK, root, TASK_DISTRIBUTION_TAG, comm, &status);
             int STOP = my_task.i;
-            // uint64_t start, end, start1, end1;
-            // start = GetTimeStamp();
             while (STOP != STOP_SYMBOL) {
                 RES_t result = do_task(genes[my_task.i], genes[my_task.j], my_task.id, pxy, pgap);
                 MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
                 MPI_Recv(&my_task, 1, MPI_TASK, root, TASK_DISTRIBUTION_TAG, comm, &status);
                 STOP = my_task.i;
             }
-            // end = GetTimeStamp();
-            // cout << "rank[" << 0 << "] computes: " << end - start << endl;
         }
     }
 
@@ -327,19 +322,12 @@ void do_MPI_task(int rank) {
     MPI_Recv(&my_task, 1, MPI_TASK, root, TASK_DISTRIBUTION_TAG, comm, &status);
     int STOP = my_task.i;
 
-    // uint64_t start, end, start1, end1;
-    // start = GetTimeStamp();
-
     while (STOP != STOP_SYMBOL) {
         RES_t result = do_task(genes[my_task.i], genes[my_task.j], my_task.id, misMatchPenalty, gapPenalty);
         MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
         MPI_Recv(&my_task, 1, MPI_TASK, root, TASK_DISTRIBUTION_TAG, comm, &status);
-        // cout << "rank-" << rank << ": i=" << my_task.i << ", j=" << my_task.j << ", task-id=" << my_task.id << endl;
         STOP = my_task.i;
     }
-
-    // end = GetTimeStamp();
-    // cout << "rank[" << rank << "] computes: " << end - start << endl;
 
     MPI_Type_free(&MPI_TASK);
     MPI_Type_free(&MPI_RESULT);
@@ -358,8 +346,6 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     const int TILE_HEIGHT {(int)ceil((1.0 * n) / thread_weight)};
     const int TILE_M {(int)ceil((1.0 * m) / TILE_WIDTH)};
     const int TILE_N {(int)ceil((1.0 * n) / TILE_HEIGHT)};
-
-    // bool pr = true;
 
     omp_set_num_threads(n_threads);
     int **dp = new2d(m + 1, n + 1);
@@ -499,7 +485,6 @@ inline RES_t do_task(std::string gene1, std::string gene2, int task_id, int misM
         align2.append(1, (char)yans[i]);
     }
 
-    // alignmentHash = hash(alignmentHash ++ hash(hash(align1)++hash(align2)))
     std::string align1hash = sw::sha512::calculate(align1);
     std::string align2hash = sw::sha512::calculate(align2);
     std::string problem_hash = sw::sha512::calculate(align1hash.append(align2hash));

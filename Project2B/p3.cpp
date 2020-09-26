@@ -147,10 +147,6 @@ inline MPI_Datatype create_MPI_RESULT() {
 
 inline RES_t do_task(std::string x, std::string y, int task_id, int misMatchPenalty, int gapPenalty);
 
-inline bool task_CMP(const RES_t &a, const RES_t &b) {
-    return a.id < b.id;
-}
-
 // equivalent of  int *dp[width] = new int[height][width]
 // but works for width not known at compile time.
 // (Delete structure by  delete[] dp[0]; delete[] dp;)
