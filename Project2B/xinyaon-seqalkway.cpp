@@ -512,4 +512,4 @@ inline RES_t do_task(std::string gene1, std::string gene2, int task_id, int misM
     return result;
 }
 
-// mpicxx -fopenmp -o xinyaon-seqalkway xinyaon-seqalkway.cpp
+// mpicxx -fopenmp -o xinyaon-seqalkway xinyaon-seqalkway.cpp -O3
