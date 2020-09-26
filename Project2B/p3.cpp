@@ -175,16 +175,15 @@ inline int **new2d(int width, int height) {
 // this procedure should distribute work to other MPI tasks
 // and put together results, etc.
 std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
-                                int *penalties)
-{
+                                int *penalties) {
 
-    std::string alignmentHash = "";
+    std::string alignmentHash {};
 
     int size;
     MPI_Comm_size(comm, &size);
 
-    int config[3] = {k, pxy, pgap}; // k, pxy, pgap
-    MPI_Bcast(config, 3, MPI_INT, root, comm);
+    int meta[3] = {k, pxy, pgap}; // k, pxy, pgap
+    MPI_Bcast(meta, 3, MPI_INT, root, comm);
 
     // Broadcast the sequence length list
     int seq_length[k];
@@ -277,16 +276,16 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             TASK_t my_task;
             MPI_Recv(&my_task, 1, MPI_TASK, root, TASK_DISTRIBUTION_TAG, comm, &status);
             int STOP = my_task.i;
-            uint64_t start, end, start1, end1;
-            start = GetTimeStamp();
+            // uint64_t start, end, start1, end1;
+            // start = GetTimeStamp();
             while (STOP != STOP_SYMBOL) {
                 RES_t result = do_task(genes[my_task.i], genes[my_task.j], my_task.id, pxy, pgap);
                 MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
                 MPI_Recv(&my_task, 1, MPI_TASK, root, TASK_DISTRIBUTION_TAG, comm, &status);
                 STOP = my_task.i;
             }
-            end = GetTimeStamp();
-            cout << "rank[" << 0 << "] computes: " << end - start << endl;
+            // end = GetTimeStamp();
+            // cout << "rank[" << 0 << "] computes: " << end - start << endl;
         }
     }
 
@@ -298,17 +297,14 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
 
 // called for all tasks with rank!=root
 // do stuff for each MPI task based on rank
-void do_MPI_task(int rank)
-{
+void do_MPI_task(int rank) {
     MPI_Status status;
+    int meta[3]; // k, pxy, pgap
+    MPI_Bcast(meta, 3, MPI_INT, root, comm);
 
-    // receive the configuration
-    int config[3]; // k, pxy, pgap
-    MPI_Bcast(config, 3, MPI_INT, root, comm);
-
-    int misMatchPenalty = config[1];
-    int gapPenalty = config[2];
-    int k = config[0];
+    int misMatchPenalty = meta[1];
+    int gapPenalty = meta[2];
+    int k = meta[0];
 
     // receive the sequneces length list
     int seq_length[k];
@@ -319,13 +315,11 @@ void do_MPI_task(int rank)
 
     // receive the gene sequences
     string genes[k];
-    for (int i = 0; i < k; i++)
-    {
+    for (int i = 0; i < k; i++) {
         char buffer[seq_length[i] + 1];
         MPI_Bcast(buffer, seq_length[i], MPI_CHAR, root, comm);
         buffer[seq_length[i]] = '\0';
         genes[i] = string(buffer, seq_length[i]);
-        // cout << "rank " << rank << "  " << genes[i] << endl;
     }
 
     // receive my initial task
@@ -333,18 +327,19 @@ void do_MPI_task(int rank)
     MPI_Recv(&my_task, 1, MPI_TASK, root, TASK_DISTRIBUTION_TAG, comm, &status);
     int STOP = my_task.i;
 
-    uint64_t start, end, start1, end1;
-    start = GetTimeStamp();
-    while (STOP != STOP_SYMBOL)
-    {
+    // uint64_t start, end, start1, end1;
+    // start = GetTimeStamp();
+
+    while (STOP != STOP_SYMBOL) {
         RES_t result = do_task(genes[my_task.i], genes[my_task.j], my_task.id, misMatchPenalty, gapPenalty);
         MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
         MPI_Recv(&my_task, 1, MPI_TASK, root, TASK_DISTRIBUTION_TAG, comm, &status);
         // cout << "rank-" << rank << ": i=" << my_task.i << ", j=" << my_task.j << ", task-id=" << my_task.id << endl;
         STOP = my_task.i;
     }
-    end = GetTimeStamp();
-    cout << "rank[" << rank << "] computes: " << end - start << endl;
+
+    // end = GetTimeStamp();
+    // cout << "rank[" << rank << "] computes: " << end - start << endl;
 
     MPI_Type_free(&MPI_TASK);
     MPI_Type_free(&MPI_RESULT);
@@ -483,14 +478,12 @@ inline RES_t do_task(std::string gene1, std::string gene2, int task_id, int misM
     int penalty = getMinimumPenalty(gene1, gene2, misMatchPenalty, gapPenalty, xans, yans);
 
     int id = 1;
-    int a;
+    int i;
 
     // find the start of the extra gap
-    for (a = l; a >= 1; a--)
-    {
-        if ((char)yans[a] == '_' && (char)xans[a] == '_')
-        {
-            id = a + 1;
+    for (i = l; i >= 1; i--) {
+        if ((char)yans[i] == '_' && (char)xans[i] == '_') {
+            id = i + 1;
             break;
         }
     }
@@ -498,13 +491,12 @@ inline RES_t do_task(std::string gene1, std::string gene2, int task_id, int misM
     // extract the exact alignment for both string
     std::string align1 = "";
     std::string align2 = "";
-    for (a = id; a <= l; a++)
-    {
-        align1.append(1, (char)xans[a]);
+    for (i = id; i <= l; i++) {
+        align1.append(1, (char)xans[i]);
     }
-    for (a = id; a <= l; a++)
-    {
-        align2.append(1, (char)yans[a]);
+    
+    for (i = id; i <= l; i++) {
+        align2.append(1, (char)yans[i]);
     }
 
     // alignmentHash = hash(alignmentHash ++ hash(hash(align1)++hash(align2)))
