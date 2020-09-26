@@ -416,44 +416,36 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     const int TILE_N {(int)ceil((1.0 * n) / TILE_HEIGHT)};
 
     int total_diagonal = TILE_M + TILE_N - 1;
-    int row_min, row_max, diagonal_index, k;
+    int row_min, row_max, k;
 
-    for (diagonal_index = 1; diagonal_index <= total_diagonal; ++diagonal_index) {
-        row_min = max(1, diagonal_index - TILE_N + 1);
-        row_max = min(diagonal_index, TILE_M);
+    for (int line = 1; line <= total_diagonal; ++line) {
+        row_min = max(1, line - TILE_N + 1);
+        row_max = min(line, TILE_M);
 
         #pragma omp parallel for
-        for (k = row_min; k <= row_max; ++k)
-        {
-            int tile_row_start = 1 + (k - 1) * TILE_WIDTH;              // index inclusive
-            int tile_row_end = min(tile_row_start + TILE_WIDTH, m + 1); // index exclusive
-            int tile_col_start = 1 + (diagonal_index - k) * TILE_HEIGHT; // index inclusive
-            int tile_col_end = min(tile_col_start + TILE_HEIGHT, n + 1); // index exclusive
+        for (k = row_min; k <= row_max; ++k) {
 
-            //            cout << "(" << tile_row_start<< "," << tile_col_start << ")" << " | ";
-            //            cout << "-> (" << tile_row_end << "," << tile_col_end << ")" << '|';
-            for (int ii = tile_row_start; ii < tile_row_end; ++ii)
-            {
-                for (int jj = tile_col_start; jj < tile_col_end; ++jj)
-                {
-                    if (x[ii - 1] == y[jj - 1])
-                    {
-                        dp[ii][jj] = dp[ii - 1][jj - 1];
-                    }
-                    else
-                    {
-                        dp[ii][jj] = min(dp[ii - 1][jj - 1] + pxy,
-                                        min(dp[ii - 1][jj] + pgap,
-                                          dp[ii][jj - 1] + pgap));
+            int i_lb = 1 + (k - 1) * TILE_WIDTH;
+            int i_ub = min(i_lb + TILE_WIDTH, m + 1);
+            int j_lb = 1 + (line - k) * TILE_HEIGHT;
+            int j_ub = min(j_lb + TILE_HEIGHT, n + 1);
+
+            for (i = i_lb; i < i_ub; ++i) {
+                for (j = j_lb; j < j_ub; ++j) {
+                    if (x[i - 1] == y[j - 1]) {
+                        dp[i][j] = dp[i - 1][j - 1];
+                    } else {
+                        dp[i][j] = min(dp[i - 1][j - 1] + pxy,
+                                        min(dp[i - 1][j] + pgap,
+                                          dp[i][j - 1] + pgap));
                     }
                 }
             }
         }
-        //        cout << "n_done" << endl;
     }
 
     // Reconstructing the solution
-    int l = n + m; // maximum possible length
+    int l = n + m;
 
     i = m;
     j = n;
@@ -461,62 +453,46 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     int xpos = l;
     int ypos = l;
 
-    while (!(i == 0 || j == 0))
-    {
-        if (x[i - 1] == y[j - 1])
-        {
+    while (!(i == 0 || j == 0)) {
+        if (x[i - 1] == y[j - 1]) {
             xans[xpos--] = (int)x[i - 1];
             yans[ypos--] = (int)y[j - 1];
             i--;
             j--;
-        }
-        else if (dp[i - 1][j - 1] + pxy == dp[i][j])
-        {
+        } else if (dp[i - 1][j - 1] + pxy == dp[i][j]) {
             xans[xpos--] = (int)x[i - 1];
             yans[ypos--] = (int)y[j - 1];
             i--;
             j--;
-        }
-        else if (dp[i - 1][j] + pgap == dp[i][j])
-        {
+        } else if (dp[i - 1][j] + pgap == dp[i][j]) {
             xans[xpos--] = (int)x[i - 1];
             yans[ypos--] = (int)'_';
             i--;
-        }
-        else
-        {
+        } else {
             xans[xpos--] = (int)'_';
             yans[ypos--] = (int)y[j - 1];
             j--;
         }
     }
 
-    omp_set_num_threads(omp_get_max_threads());
     int x_diff = xpos - i, y_diff = ypos - j;
     #pragma omp parallel for
-    for (int ii = i; ii > 0; --ii)
-    {
+    for (int ii = i; ii > 0; --ii) {
         xans[ii + x_diff] = (int)x[ii - 1];
     }
 
     #pragma omp parallel for
-    for (int x_pos2 = xpos - i; x_pos2 > 0; --x_pos2)
-    {
+    for (int x_pos2 = xpos - i; x_pos2 > 0; --x_pos2) {
         xans[x_pos2] = (int)'_';
     }
 
     #pragma omp parallel for
-    for (int jj = j; jj > 0; --jj)
-    {
+    for (int jj = j; jj > 0; --jj) {
         yans[jj + y_diff] = (int)y[jj - 1];
-        if (jj == 0)
-        {
-        }
     }
 
     #pragma omp parallel for
-    for (int y_pos2 = ypos - j; y_pos2 > 0; --y_pos2)
-    {
+    for (int y_pos2 = ypos - j; y_pos2 > 0; --y_pos2) {
         yans[y_pos2] = (int)'_';
     }
 
