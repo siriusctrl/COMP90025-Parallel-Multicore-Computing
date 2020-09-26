@@ -340,6 +340,8 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     int m = x.length();
     int n = y.length();
 
+    int thread_weight = n_threads * 4;
+
     const int TILE_WIDTH {(int)ceil((1.0 * m) / thread_weight)};
     const int TILE_HEIGHT {(int)ceil((1.0 * n) / thread_weight)};
     const int TILE_M {(int)ceil((1.0 * m) / TILE_WIDTH)};
@@ -360,9 +362,6 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
             dp[0][i] = i * pgap;
         }
     }
-
-    int thread_weight = n_threads * 4;
-
 
     int total_diagonal = TILE_M + TILE_N - 1;
     int row_min, row_max, k;
