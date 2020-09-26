@@ -264,7 +264,9 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
                 }
             }
 
-            std::sort(results.begin(), results.end(), task_CMP);
+            std::sort(results.begin(), results.end(), [](auto const &a, auto const &b) {
+                return a.id < b.id;
+            });
 
             for (int i = 0; i < results.size(); ++i) {
                 alignmentHash = sw::sha512::calculate(alignmentHash.append(results[i].problem_hash));
