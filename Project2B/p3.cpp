@@ -382,70 +382,53 @@ void do_MPI_task(int rank)
 
 // function to find out the minimum penalty
 // return the minimum penalty and put the aligned sequences in xans and yans
-inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, int *xans, int *yans)
-{
+inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, int *xans, int *yans) {
 
-    int i, j; // intialising variables
+    int i, j;
 
-    int m = x.length(); // length of gene1
-    int n = y.length(); // length of gene2
+    int m = x.length();
+    int n = y.length();
 
     // bool pr = true;
 
-    // table for storing optimal substructure answers
     omp_set_num_threads(n_threads);
     int **dp = new2d(m + 1, n + 1);
 
-    // remove unnecessary memset
-    //    size_t size = m + 1;
-    //    size *= n + 1;
-    //    memset (dp[0], 0, size);
-
-    // intialising the table
-    #pragma omp parallel for
-    for (i = 0; i <= m; ++i)
+    #pragma omp parallel
     {
-        // if (pr) {
-        //     cout << "number of threads" << omp_get_num_threads() << endl;
-        //     pr = false;
-        // }
+        #pragma omp for nowait
+        for (i = 0; i <= m; ++i) {
+            dp[i][0] = i * pgap;
+        }
 
-        dp[i][0] = i * pgap;
-    }
-    #pragma omp parallel for
-    for (i = 0; i <= n; ++i)
-    {
-        dp[0][i] = i * pgap;
+        #pragma omp for nowait
+        for (i = 0; i <= n; ++i) {
+            dp[0][i] = i * pgap;
+        }
     }
 
     int thread_weight = n_threads * 4;
 
-    // calculating the minimum penalty with the tiling technique in an anti-diagonal version
-    int tile_row_size = (int)ceil((1.0 * m) / thread_weight); // Number of dp elements in row of each tile
-    int tile_col_size = (int)ceil((1.0 * n) / thread_weight); // Number of dp elements in column of each tile
+    const int TILE_WIDTH {(int)ceil((1.0 * m) / thread_weight)};
+    const int TILE_HEIGHT {(int)ceil((1.0 * n) / thread_weight)};
 
-    //    int tile_row_size = 256; // Number of dp elements in row of each tile
-    //    int tile_col_size = 256; // Number of dp elements in column of each tile
-    int tile_m = (int)ceil((1.0 * m) / tile_row_size); // Number of tiles in row of the dp matrix
-    int tile_n = (int)ceil((1.0 * n) / tile_col_size); // Number of tile in column of the dp matrix
+    const int TILE_M {(int)ceil((1.0 * m) / TILE_WIDTH)};
+    const int TILE_N {(int)ceil((1.0 * n) / TILE_HEIGHT)};
 
-    int total_diagonal = tile_m + tile_n - 1;
+    int total_diagonal = TILE_M + TILE_N - 1;
     int row_min, row_max, diagonal_index, k;
-    //    cout << "tile_row_size: " << tile_row_size << ", tile_col_size: " << tile_col_size << endl;
-    //    cout << "tile_m: " << tile_m << ", tile_n: " << tile_n << endl;
-    //    cout << "total_diagonal: " << total_diagonal << endl;
-    for (diagonal_index = 1; diagonal_index <= total_diagonal; ++diagonal_index)
-    {
-        row_min = max(1, diagonal_index - tile_n + 1);
-        row_max = min(diagonal_index, tile_m);
+
+    for (diagonal_index = 1; diagonal_index <= total_diagonal; ++diagonal_index) {
+        row_min = max(1, diagonal_index - TILE_N + 1);
+        row_max = min(diagonal_index, TILE_M);
 
         #pragma omp parallel for
         for (k = row_min; k <= row_max; ++k)
         {
-            int tile_row_start = 1 + (k - 1) * tile_row_size;              // index inclusive
-            int tile_row_end = min(tile_row_start + tile_row_size, m + 1); // index exclusive
-            int tile_col_start = 1 + (diagonal_index - k) * tile_col_size; // index inclusive
-            int tile_col_end = min(tile_col_start + tile_col_size, n + 1); // index exclusive
+            int tile_row_start = 1 + (k - 1) * TILE_WIDTH;              // index inclusive
+            int tile_row_end = min(tile_row_start + TILE_WIDTH, m + 1); // index exclusive
+            int tile_col_start = 1 + (diagonal_index - k) * TILE_HEIGHT; // index inclusive
+            int tile_col_end = min(tile_col_start + TILE_HEIGHT, n + 1); // index exclusive
 
             //            cout << "(" << tile_row_start<< "," << tile_col_start << ")" << " | ";
             //            cout << "-> (" << tile_row_end << "," << tile_col_end << ")" << '|';
