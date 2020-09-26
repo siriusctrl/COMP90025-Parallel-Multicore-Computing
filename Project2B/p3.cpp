@@ -116,7 +116,7 @@ typedef struct
 {
     int penalty, id;
     char problem_hash[129];
-} RESULT_t;
+} RES_t;
 
 inline MPI_Datatype create_MPI_JOB() {
     // define the job type for MPI
@@ -132,22 +132,22 @@ inline MPI_Datatype create_MPI_RESULT() {
     MPI_Aint displacements[3];
     MPI_Datatype old[3];
     block_len_arry[0] = 1;
-    displacements[0] = offsetof(RESULT_t, penalty);
+    displacements[0] = offsetof(RES_t, penalty);
     old[0] = MPI_INT;
     block_len_arry[1] = 1;
-    displacements[1] = offsetof(RESULT_t, id);
+    displacements[1] = offsetof(RES_t, id);
     old[1] = MPI_INT;
     block_len_arry[2] = 129;
-    displacements[2] = offsetof(RESULT_t, problem_hash);
+    displacements[2] = offsetof(RES_t, problem_hash);
     old[2] = MPI_CHAR;
     MPI_Type_create_struct(3, block_len_arry, displacements, old, &MPI_RESULT);
     MPI_Type_commit(&MPI_RESULT);
     return MPI_RESULT;
 }
 
-inline RESULT_t do_job(std::string x, std::string y, int job_id, int misMatchPenalty, int gapPenalty);
+inline RES_t do_job(std::string x, std::string y, int job_id, int misMatchPenalty, int gapPenalty);
 
-inline bool Job_CMP(const RESULT_t &a, const RESULT_t &b) {
+inline bool Job_CMP(const RES_t &a, const RES_t &b) {
     return a.id < b.id;
 }
 
@@ -226,20 +226,15 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
     #pragma omp parallel default(shared) num_threads(2)
     {
         if (omp_get_thread_num() == 0) {
-            // printf("I am %d from group %d\n",omp_get_thread_num(), omp_get_ancestor_thread_num(1));
-            // create job id (#cell, <i, j, job-id>)
             queue<JOB_t> jobs;
             int job_id = 0;
             for (int i = 1; i < k; i++) {
                 for (int j = 0; j < i; j++) {
                     jobs.push({i, j, job_id++});
-                    // jobs.push_back({(seq_length[i/10000])*(seq_length[j]/10000), {i, j, job_id++}});
                 }
             }
 
-            // send the initial job
             MPI_Datatype MPI_JOB = create_MPI_JOB();
-            // keep distributed the work
             MPI_Datatype MPI_RESULT = create_MPI_RESULT();
             
             
@@ -263,10 +258,10 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             }
 
             MPI_Status status;
-            vector<RESULT_t> results = {};
+            vector<RES_t> results = {};
 
             while (n_done < n_worker) {   
-                RESULT_t temp;
+                RES_t temp;
                 MPI_Recv(&temp, 1, MPI_RESULT, MPI_ANY_SOURCE, RESULT_COLLECTION_TAG, comm, &status);
                 results.push_back(temp);
 
@@ -309,7 +304,7 @@ std::string getMinimumPenalties(std::string *genes, int k, int pxy, int pgap,
             start = GetTimeStamp();
             while (STOP != STOP_SYMBOL)
             {
-                RESULT_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, pxy, pgap);
+                RES_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, pxy, pgap);
                 MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
                 MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
                 // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
@@ -367,7 +362,7 @@ void do_MPI_task(int rank)
     start = GetTimeStamp();
     while (STOP != STOP_SYMBOL)
     {
-        RESULT_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, misMatchPenalty, gapPenalty);
+        RES_t result = do_job(genes[my_job.i], genes[my_job.j], my_job.id, misMatchPenalty, gapPenalty);
         MPI_Send(&result, 1, MPI_RESULT, root, RESULT_COLLECTION_TAG, comm);
         MPI_Recv(&my_job, 1, MPI_JOB, root, JOB_DISTRIBUTION_TAG, comm, &status);
         // cout << "rank-" << rank << ": i=" << my_job.i << ", j=" << my_job.j << ", job-id=" << my_job.id << endl;
@@ -503,7 +498,7 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
     return ret;
 }
 
-inline RESULT_t do_job(std::string gene1, std::string gene2, int job_id, int misMatchPenalty, int gapPenalty)
+inline RES_t do_job(std::string gene1, std::string gene2, int job_id, int misMatchPenalty, int gapPenalty)
 {
 
     int m = gene1.length(); // length of gene1
@@ -542,7 +537,7 @@ inline RESULT_t do_job(std::string gene1, std::string gene2, int job_id, int mis
     std::string align2hash = sw::sha512::calculate(align2);
     std::string problem_hash = sw::sha512::calculate(align1hash.append(align2hash));
 
-    RESULT_t result;
+    RES_t result;
     result.penalty = penalty;
     result.id = job_id;
     strcpy(result.problem_hash, problem_hash.c_str());
