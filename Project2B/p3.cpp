@@ -387,13 +387,13 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
 
         #pragma omp parallel for
         for (k = row_min; k <= row_max; ++k) {
-            int tile_row_start = 1 + (k - 1) * TILE_WIDTH;
-            int tile_row_end = min(tile_row_start + TILE_WIDTH, m + 1);
-            int tile_col_start = 1 + (line - k) * TILE_HEIGHT;
-            int tile_col_end = min(tile_col_start + TILE_HEIGHT, n + 1);
+            int i_lb = 1 + (k - 1) * TILE_WIDTH;
+            int i_ub = min(i_lb + TILE_WIDTH, m + 1);
+            int j_lb = 1 + (line - k) * TILE_HEIGHT;
+            int j_ub = min(j_lb + TILE_HEIGHT, n + 1);
 
-            for (int ii = tile_row_start; ii < tile_row_end; ++ii) {
-                for (int jj = tile_col_start; jj < tile_col_end; ++jj) {
+            for (int ii = i_lb; ii < i_ub; ++ii) {
+                for (int jj = j_lb; jj < j_ub; ++jj) {
                     if (x[ii - 1] == y[jj - 1]) {
                         dp[ii][jj] = dp[ii - 1][jj - 1];
                     } else {
