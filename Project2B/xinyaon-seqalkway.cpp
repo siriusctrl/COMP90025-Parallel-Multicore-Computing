@@ -377,14 +377,14 @@ inline int getMinimumPenalty(std::string x, std::string y, int pxy, int pgap, in
             int j_lb = 1 + (line - k) * TILE_HEIGHT;
             int j_ub = min(j_lb + TILE_HEIGHT, n + 1);
 
-            for (int ii = i_lb; ii < i_ub; ++ii) {
-                for (int jj = j_lb; jj < j_ub; ++jj) {
-                    if (x[ii - 1] == y[jj - 1]) {
-                        dp[ii][jj] = dp[ii - 1][jj - 1];
+            for (i = i_lb; i < i_ub; ++i) {
+                for (j = j_lb; j < j_ub; ++j) {
+                    if (x[i - 1] == y[j - 1]) {
+                        dp[i][j] = dp[i - 1][j - 1];
                     } else {
-                        dp[ii][jj] = min(dp[ii - 1][jj - 1] + pxy,
-                                        min(dp[ii - 1][jj] + pgap,
-                                          dp[ii][jj - 1] + pgap));
+                        dp[i][j] = min(dp[i - 1][j - 1] + pxy,
+                                        min(dp[i - 1][j] + pgap,
+                                          dp[i][j - 1] + pgap));
                     }
                 }
             }
