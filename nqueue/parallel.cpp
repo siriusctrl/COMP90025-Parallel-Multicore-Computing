@@ -1,7 +1,7 @@
 /* solving the N-Queens problem using OpenMP
    usage with gcc (version 4.2 or higher required):
-     g++ -fopenmp -o naive_parallel naive_parallel.c
-     ./naive_parallel n numWorkers
+     g++ -fopenmp -o parallel parallel.c
+     ./nqueens-openmp n numWorkers
 */
 
 #include <stdio.h>
@@ -9,13 +9,12 @@
 #include <stdbool.h>
 #include <time.h>
 #include <sys/time.h>
-#include <vector>
 
 #include <omp.h>
 
-using namespace std;
+#define MAX_N 16
 
-int check_acceptable(int queen_rows[], int n)
+int check_acceptable(int queen_rows[MAX_N], int n)
 {
 	int i, j;
 	for (i = 0; i < n; i++)
@@ -43,8 +42,6 @@ int main(int argc, char* argv[])
     double start_time, end_time;
     int number_solutions = 0;
 
-    std::vector<int> values;
-
 	// config
 	{
 	    int num_workers;
@@ -54,12 +51,10 @@ int main(int argc, char* argv[])
         num_workers = (argc > 2) ? atoi(argv[2]) : 12;
         
         omp_set_num_threads(num_workers);
-	    
-        // maximum of n factorial possible combination
+	        
         for (i = 0; i < n; i++)
         {
-            max_iter *= i;
-            values.push_back(i);
+            max_iter *= n;
         }
     }
   
@@ -68,20 +63,38 @@ int main(int argc, char* argv[])
 	#pragma omp parallel for
 	for (int iter = 0; iter < max_iter; iter++)
 	{
-	    int queen_rows[n];
+		int code = iter;
+		int i;
+	    int queen_rows[MAX_N];
 		// the index correspond to the queen's number and the queen's column
 		// we only generate configurations where there's only one queen per column
-            // for (i = 0; i < n; i++)
-            // {
-            //     queen_rows[i] = code % n;
-                
-            //     code /= n;
-            // }
+		for (i = 0; i < n; i++)
+		{
+			queen_rows[i] = code % n;
+			
+			code /= n;
+		}
 		
 		if (check_acceptable(queen_rows, n))
 		{
 			#pragma omp atomic
 		    number_solutions++;
+		    
+			// #pragma omp critical
+            // {
+			//     printf("\n");
+			//     for (i = 0; i < n; i++)
+			//     {
+			//         int j;
+			// 	    for (j = 0; j < n; j++)
+			// 	    {
+			// 		    if (queen_rows[i] == j)	printf("|X");
+			// 		    else printf("| ");
+			// 	    }
+			// 	    printf("|\n");
+			//     }
+			//     printf("\n");
+			// }
 		}
 	}
 

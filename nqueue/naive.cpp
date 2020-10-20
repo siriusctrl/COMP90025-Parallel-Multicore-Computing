@@ -112,22 +112,5 @@ int main()
     return 0; 
 }
 
-void print_board(vector<vector<int>> board) 
-{
-    for (auto const &row : board) {
-
-        for (int col : row) 
-        {
-            if (col == 0) 
-            {
-                cout << " _ ";
-            } else {
-                cout << " " << 1 << " ";
-            }
-        }
-
-        cout << "\n" << endl;
-    }
-}
 
 // g++ -std=c++14 naive.cpp -o naive -O3
