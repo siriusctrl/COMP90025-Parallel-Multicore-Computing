@@ -1,95 +1,79 @@
-/* solving the N-Queens problem using OpenMP
-   usage with gcc (version 4.2 or higher required):
-     g++ -fopenmp -o naive_parallel naive_parallel.c
-     ./naive_parallel n numWorkers
-*/
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <time.h>
-#include <sys/time.h>
+#include <iostream>
 #include <vector>
+#include <algorithm>
+#include <mpi.h>
 
-#include <omp.h>
+using std::vector;
+using std::cin;
+using std::cout;
+using std::endl;
 
-using namespace std;
+void find_solution(int n, int max_solution);
+bool check_acceptable(const vector<int> &queen_rows);
 
-int check_acceptable(int queen_rows[], int n)
+const MPI_Comm comm = MPI_COMM_WORLD;
+
+int main(int argc, char *argv[])
 {
-	int i, j;
-	for (i = 0; i < n; i++)
+    int n, max_solutions;
+
+    n = (argc > 1) ? atoi(argv[1]) : 8;
+    max_solutions = (argc > 2) ? atoi(argv[2]) : 92;
+
+    int rank, prov;
+
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &prov);
+    MPI_Comm_rank(comm, &rank);
+
+    cout << rank << endl;
+
+    find_solution(n, max_solutions);
+    MPI::Finalize();
+
+    return 0;
+}
+
+
+void find_solution(int n, int max_solution) 
+{
+    int solution[n] = {0};
+    int n_solutions {0};
+    vector<int> permutation{};
+
+    for (int i=0; i<n; ++i) {
+        permutation.push_back(i);
+    }
+
+    do {
+        if (check_acceptable(permutation)) {
+            n_solutions++;
+
+            for (auto p: permutation) {
+                cout << p << " ";
+            }
+
+            cout << endl;
+        }
+    } 
+    while(n_solutions < max_solution && std::next_permutation(permutation.begin(), permutation.end()));
+
+    cout << max_solution << " solutions found!" << endl;
+}
+
+
+bool check_acceptable(const vector<int> &queen_rows)
+{
+	for (int i = 0; i < queen_rows.size(); ++i)
 	{
-		for (j = i+1; j < n; j++)
+		for (int j = i+1; j < queen_rows.size(); ++j)
 		{
-			// two queens in the same row => not a solution!
-			if (queen_rows[i] == queen_rows[j]) return 0;
-			
 			// two queens in the same diagonal => not a solution!
 			if (queen_rows[i] - queen_rows[j] == i - j ||
 			    queen_rows[i] - queen_rows[j] == j - i)
-			    return 0;
+			    return false;
 		}
 	}
 
-	return 1;
+	return true;
 }
-
-int main(int argc, char* argv[])
-{
-    int n;
-    int max_iter = 1;
-    
-    double start_time, end_time;
-    int number_solutions = 0;
-
-    std::vector<int> values;
-
-	// config
-	{
-	    int num_workers;
-        int i;
-	
-        n = (argc > 1) ? atoi(argv[1]) : 8;
-        num_workers = (argc > 2) ? atoi(argv[2]) : 12;
-        
-        omp_set_num_threads(num_workers);
-	    
-        // maximum of n factorial possible combination
-        for (i = 0; i < n; i++)
-        {
-            max_iter *= i;
-            values.push_back(i);
-        }
-    }
-  
-    start_time = omp_get_wtime();
-    
-	#pragma omp parallel for
-	for (int iter = 0; iter < max_iter; iter++)
-	{
-	    int queen_rows[n];
-		// the index correspond to the queen's number and the queen's column
-		// we only generate configurations where there's only one queen per column
-            // for (i = 0; i < n; i++)
-            // {
-            //     queen_rows[i] = code % n;
-                
-            //     code /= n;
-            // }
-		
-		if (check_acceptable(queen_rows, n))
-		{
-			#pragma omp atomic
-		    number_solutions++;
-		}
-	}
-
-    // get end time
-    end_time = omp_get_wtime();
-    // print results
-    printf("The execution time is %g sec\n", end_time - start_time);
-    printf("Number of found solutions is %d\n", number_solutions);
-    
-	return 0;
-}
+// mpicxx -std=c++14 naive_parallel.cpp -o naive_parallel -O3
