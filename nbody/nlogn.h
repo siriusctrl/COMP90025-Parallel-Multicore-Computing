@@ -34,11 +34,12 @@ constexpr double MASS_BOUND = 1.0e24;
 // Body related calculation
 class Body {
 public:
+    int count;
     double mass, px, py, pz, vx, vy, vz;
     // it does not compile if we add constructor here
     Body() = default;
-    Body(double mass, double px, double py, double pz, double vx, double vy, double vz) 
-            : mass {mass*MASS_BOUND}, px {px * X_BOUND}, py {py * Y_BOUND}, pz {pz * Z_BOUND}, vx {vx}, vy {vy}, vz {vz}
+    Body(int count, double mass, double px, double py, double pz, double vx, double vy, double vz) 
+            : count {count}, mass {mass*MASS_BOUND}, px {px * X_BOUND}, py {py * Y_BOUND}, pz {pz * Z_BOUND}, vx {vx}, vy {vy}, vz {vz}
     {
         // cout << "body init successfully" << endl;
     }
@@ -46,6 +47,7 @@ public:
 
 // Overloaded operator for '<<' for struct output
 std::ostream& operator<<(std::ostream &strm, const Body &body) {
+    strm << body.count << ": ";
     strm << "mass: " << body.mass << " px: " << body.px << " py: " << body.py << " pz: " << body.pz;
     strm << " vx: " << body.vx << " vy: " << body.vy << " vz: " << body.vz << endl;
     return strm;

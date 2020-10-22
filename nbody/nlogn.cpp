@@ -98,7 +98,6 @@ int main(int argc, char **argv) {
     iteration_iss >> T;
     cout << "run " << T << " iterations" << endl;
 
-    // Body n_bodies[N];
     vector<Body> n_bodies {};
     int count {0};
 
@@ -112,9 +111,7 @@ int main(int argc, char **argv) {
             break; 
         }
 
-        // Body temp {mass, px, py, pz, vx, vy, vz};
-        // n_bodies[count] = std::move(temp);
-        n_bodies.emplace_back(mass, px, py, pz, vx, vy, vz);
+        n_bodies.emplace_back(count, mass, px, py, pz, vx, vy, vz);
         count++;
     }
 
@@ -127,8 +124,9 @@ int main(int argc, char **argv) {
     calculate(N, T, G, DT, &n_bodies.front());
     cout << "time = " << GetTimeStamp() - start << " ns" << endl;
 
-    for (int i = 0; i < N; ++i) {
-        cout << i << ": " << n_bodies[i];
+    for (auto const &b: n_bodies) 
+    {
+        cout << b;
     }
 
     return 0;
