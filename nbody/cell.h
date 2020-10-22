@@ -46,39 +46,15 @@ Cell* create_cell(double width, double height, double depth) {
 }
 
 /* sets the location of the children relative to the current cell */
-void set_location_of_children(Cell* cell, double width, double heigth, double depth){
-   // Set location of new cells
-   ((cell->children[0])->center).px = (cell->center).px;
-   ((cell->children[0])->center).py = (cell->center).py;
-   ((cell->children[0])->center).pz = (cell->center).pz;
-
-   ((cell->children[1])->center).px = (cell->center).px + width;
-   ((cell->children[1])->center).py = (cell->center).py;
-   ((cell->children[1])->center).pz = (cell->center).pz;
-
-   ((cell->children[2])->center).px = (cell->center).px + width;
-   ((cell->children[2])->center).py = (cell->center).py;
-   ((cell->children[2])->center).pz = (cell->center).pz + depth;
-
-   ((cell->children[3])->center).px = (cell->center).px;
-   ((cell->children[3])->center).py = (cell->center).py;
-   ((cell->children[3])->center).pz = (cell->center).pz + depth;
-
-   ((cell->children[4])->center).px = (cell->center).px;
-   ((cell->children[4])->center).py = (cell->center).py + heigth;
-   ((cell->children[4])->center).pz = (cell->center).pz;
-
-   ((cell->children[5])->center).px = (cell->center).px + width;
-   ((cell->children[5])->center).py = (cell->center).py + heigth;
-   ((cell->children[5])->center).pz = (cell->center).pz;
-
-   ((cell->children[6])->center).px = (cell->center).px + width;   // Coordinates of this cell marks
-   ((cell->children[6])->center).py = (cell->center).py + heigth;  // the mid-point of the parent cell
-   ((cell->children[6])->center).pz = (cell->center).pz + depth;   //
-   
-   ((cell->children[7])->center).px = (cell->center).px;
-   ((cell->children[7])->center).py = (cell->center).py + heigth;
-   ((cell->children[7])->center).pz = (cell->center).pz + depth;
+void set_location_of_children(Cell* cell, double width, double height, double depth){
+    ((cell->children[0])->center).set_coordinates(cell->center);
+    ((cell->children[1])->center).set_coordinates(cell->center, width, 0, 0);
+    ((cell->children[2])->center).set_coordinates(cell->center, width, 0, depth);
+    ((cell->children[3])->center).set_coordinates(cell->center, 0, 0, depth);
+    ((cell->children[4])->center).set_coordinates(cell->center, 0, height, 0);
+    ((cell->children[5])->center).set_coordinates(cell->center, width, height, 0);
+    ((cell->children[6])->center).set_coordinates(cell->center, width, height, depth);
+    ((cell->children[7])->center).set_coordinates(cell->center, 0, height, depth);
 }
 
 /*

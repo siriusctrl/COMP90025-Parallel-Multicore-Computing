@@ -59,6 +59,25 @@ public:
         dz = other.pz - pz;
         return sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2));
     }
+
+    void set_coordinates(double px, double py, double pz)
+    {
+        this->px = px;
+        this->py = py;
+        this->pz = pz;
+    }
+
+    void set_coordinates(const Body &other, double x_offset, double y_offset, double z_offset)
+    {
+        px = other.px + x_offset;
+        py = other.py + y_offset;
+        pz = other.pz + z_offset;
+    }
+
+    void set_coordinates(const Body &other)
+    {
+        set_coordinates(other, 0.0, 0.0, 0.0);
+    }
 };
 
 // Overloaded operator for '<<' for struct output
