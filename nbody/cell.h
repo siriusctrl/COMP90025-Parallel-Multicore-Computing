@@ -244,7 +244,8 @@ void compute_force_from_cell(Cell* cell, int i, Body * n_bodies, double G, Force
     euclidean_distance = sqrt(pow(px_diff, 2) + pow(py_diff, 2) + pow(pz_diff, 2));
 
     // G * m_i * m_j / (||p_j - p_i||)^3
-    factor = G * (cell->center).mass * n_bodies[i].mass / (pow(euclidean_distance, 3) + EPSILON); // + epsilon to avoid zero division
+    factor = G * (cell->center).mass * n_bodies[i].mass / (pow(euclidean_distance, 3) + EPSILON);
+    
     // f_ij = factor * (p_j - p_i)
     force->fx += px_diff * factor; // force in x direction
     force->fy += py_diff * factor; // force in y direction
