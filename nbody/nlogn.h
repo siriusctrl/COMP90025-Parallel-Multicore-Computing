@@ -47,7 +47,7 @@ public:
 // Overloaded operator for '<<' for struct output
 std::ostream& operator<<(std::ostream &strm, const Body &body) {
     strm << "mass: " << body.mass << " px: " << body.px << " py: " << body.py << " pz: " << body.pz;
-    strm << " vx: " << body.vx << " vy: " << body.vy << " vz: " << body.vz;
+    strm << " vx: " << body.vx << " vy: " << body.vy << " vz: " << body.vz << endl;
     return strm;
 }
 
