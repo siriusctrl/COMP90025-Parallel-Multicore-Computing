@@ -1,6 +1,4 @@
 #include "nlogn.h"
-#include "cell.h"
-
 
 // compute force for body i based on body j where j != i
 // i: body i

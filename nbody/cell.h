@@ -1,7 +1,7 @@
 #ifndef __CELL_H__
 #define __CELL_H__
 
-#include "nlogn.h"
+#include "body.h"
 
 class Cell  {
 public:
