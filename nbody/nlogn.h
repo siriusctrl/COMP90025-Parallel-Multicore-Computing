@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cstdlib>
 #include <vector>
+#include <sstream>
+#include <fstream>
 
 using namespace std;
 
@@ -38,7 +40,7 @@ public:
     Body(double mass, double px, double py, double pz, double vx, double vy, double vz) 
             : mass {mass*MASS_BOUND}, px {px * X_BOUND}, py {py * Y_BOUND}, pz {pz * Z_BOUND}, vx {vx}, vy {vy}, vz {vz}
     {
-        // cout << "partical init successfully" << endl;
+        // cout << "body init successfully" << endl;
     }
 };
 

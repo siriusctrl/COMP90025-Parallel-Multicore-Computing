@@ -74,32 +74,51 @@ void calculate(int N, int T, double G, double TIME_DELTA, Body *n_bodies) {
 int main(int argc, char **argv) {
     uint64_t start, end;
 
+    if (argc < 2) {
+        cout << "unspecified file name" << endl;
+    }
+
+    std::ifstream file {argv[1]};
+    string line {};
+
+    int N {0};
+
+    //read the particals number
+    std::getline(file, line);
+    std::istringstream num_iss {line};
+
     // n bodies
-    int N;
-    // n iterations
-    int T;
-    cin >> N;
-    cin >> T;
-    
-    // cout << T << " " << G << " " << TIME_DELTA << endl;
+    num_iss >> N;
+    cout << "get " << N << " particals" << endl;
+
+    int T {0};
+    // read the iteration values
+    std::getline(file, line);
+    std::istringstream iteration_iss {line};
+    iteration_iss >> T;
+    cout << "run " << T << " iterations" << endl;
 
     Body n_bodies[N];
-    for (int i = 0; i < N; ++i) {
-        cin >> n_bodies[i].mass;
-        n_bodies[i].mass *= MASS_BOUND;
+    int count {0};
 
-        cin >> n_bodies[i].px;
-        n_bodies[i].px *= X_BOUND;
+    // read each partical settings
+    while (std::getline(file, line))
+    {   
+        std::istringstream iss {line};
+        double mass, px, py, pz, vx, vy, vz;
+        if (!(iss >> mass >> px >> py >> pz >> vx >> vy >> vz)) 
+        {
+            break; 
+        }
 
-        cin >> n_bodies[i].py;
-        n_bodies[i].py *= Y_BOUND;
+        Body temp {mass, px, py, pz, vx, vy, vz};
+        n_bodies[count] = std::move(temp);
+        count++;
+    }
 
-        cin >> n_bodies[i].pz;
-        n_bodies[i].pz *= Z_BOUND;
-
-        cin >> n_bodies[i].vx;
-        cin >> n_bodies[i].vy;
-        cin >> n_bodies[i].vz;
+    if (count != N) {
+        cout << "bodies number unmatched" << " get " << count << ", need " << N << endl;
+        exit(1);
     }
 
     start = GetTimeStamp();
