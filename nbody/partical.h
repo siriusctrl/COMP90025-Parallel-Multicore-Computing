@@ -1,5 +1,5 @@
-#ifndef __BODY_H__
-#define __BODY_H__
+#ifndef __PARTICAL_H__
+#define __PARTICAL_H__
 
 #include <cmath>
 #include <string>
@@ -17,24 +17,24 @@ constexpr double G = 6.67e-11;
 constexpr double DT = 0.001;
 constexpr double MASS_BOUND = 1.0e24;
 
-// Body related calculation
-class Body {
+// Partical related calculation
+class Partical {
 public:
     int count;
     double mass, px, py, pz, vx, vy, vz;
     // it does not compile if we add constructor here
-    Body() = default;
-    Body(double init) 
+    Partical() = default;
+    Partical(double init) 
     {   
-        Body(init, init, init, init, init, init, init, init);
+        Partical(init, init, init, init, init, init, init, init);
     }
-    Body(int count, double mass, double px, double py, double pz, double vx, double vy, double vz) 
+    Partical(int count, double mass, double px, double py, double pz, double vx, double vy, double vz) 
         : count {count}, mass {mass*MASS_BOUND}, px {px * X_BOUND}, py {py * Y_BOUND}, pz {pz * Z_BOUND}, vx {vx}, vy {vy}, vz {vz}
     {
-        // cout << "body init successfully" << endl;
+        // cout << "partical init successfully" << endl;
     }
 
-    double compute_distance(const Body &other) const
+    double compute_distance(const Partical &other) const
     {
         double dx, dy, dz;
         dx = other.px - px;
@@ -50,24 +50,24 @@ public:
         this->pz = pz;
     }
 
-    void set_coordinates(const Body &other, double x_offset, double y_offset, double z_offset)
+    void set_coordinates(const Partical &other, double x_offset, double y_offset, double z_offset)
     {
         px = other.px + x_offset;
         py = other.py + y_offset;
         pz = other.pz + z_offset;
     }
 
-    void set_coordinates(const Body &other)
+    void set_coordinates(const Partical &other)
     {
         set_coordinates(other, 0.0, 0.0, 0.0);
     }
 };
 
 // Overloaded operator for '<<' for struct output
-std::ostream& operator<<(std::ostream &strm, const Body &body) {
-    strm << body.count << ": ";
-    strm << "mass: " << body.mass << " px: " << body.px << " py: " << body.py << " pz: " << body.pz;
-    strm << " vx: " << body.vx << " vy: " << body.vy << " vz: " << body.vz << endl;
+std::ostream& operator<<(std::ostream &strm, const Partical &partical) {
+    strm << partical.count << ": ";
+    strm << "mass: " << partical.mass << " px: " << partical.px << " py: " << partical.py << " pz: " << partical.pz;
+    strm << " vx: " << partical.vx << " vy: " << partical.vy << " vz: " << partical.vz << endl;
     return strm;
 }
 
@@ -75,4 +75,4 @@ class Force {
 public:
     double fx, fy, fz;
 };
-#endif // __BODY_H__
+#endif // __PARTICAL_H__

@@ -26,7 +26,7 @@ uint64_t GetTimeStamp() {
 int N {0};
 int T {0};
 
-void load_data(string filename, vector<Body> &n_bodies)
+void load_data(string filename, vector<Partical> &particals)
 {
     std::ifstream file {filename};
     string line {};
@@ -57,7 +57,7 @@ void load_data(string filename, vector<Body> &n_bodies)
             break; 
         }
 
-        n_bodies.emplace_back(count, mass, px, py, pz, vx, vy, vz);
+        particals.emplace_back(count, mass, px, py, pz, vx, vy, vz);
         count++;
     }
 

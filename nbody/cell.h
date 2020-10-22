@@ -1,14 +1,14 @@
 #ifndef __CELL_H__
 #define __CELL_H__
 
-#include "body.h"
+#include "partical.h"
 
 class Cell  {
 public:
     int index;                   // Index into arrays to identify particle's 
                                     // position and mass
     int n_children;              // Indicate whether cell is leaf or has 8 children
-    Body center;                 // center of approximate body
+    Partical center;                 // center of approximate partical
                                     //  - Mass of particle of total mass of subtree
                                     //  - position of cell(cube) in space
                                     //  - position of center of mass of cell
@@ -20,7 +20,7 @@ public:
         : width {width}, height {height}, depth {depth}, index {-1}, n_children {0}
         {
             // cout << "Cell created" << endl;
-            center = Body(0.0);
+            center = Partical(0.0);
         }
     
     /*
@@ -47,32 +47,32 @@ public:
     /* 
      * Locates the child to which the particle must be added 
      */
-    int locate_child(const Body &body)
+    int locate_child(const Partical &partical)
     {
-        // Determine which child to add the body to
-        if (body.px > children[6]->center.px) {
-            if (body.py > children[6]->center.py) {
-                if (body.pz > children[6]->center.pz) {
+        // Determine which child to add the partical to
+        if (partical.px > children[6]->center.px) {
+            if (partical.py > children[6]->center.py) {
+                if (partical.pz > children[6]->center.pz) {
                     return 6;
                 } else {
                     return 5;
                 }
             } else {
-                if (body.pz > children[6]->center.pz) {
+                if (partical.pz > children[6]->center.pz) {
                     return 2;
                 } else {
                     return 1;
                 }
             }
         } else {
-            if (body.py > children[6]->center.py) {
-                if (body.pz > children[6]->center.pz) {
+            if (partical.py > children[6]->center.py) {
+                if (partical.pz > children[6]->center.pz) {
                     return 7;
                 } else {
                     return 4;
                 }
             } else {
-                if (body.pz > children[6]->center.pz) {
+                if (partical.pz > children[6]->center.pz) {
                     return 3;
                 } else {
                     return 0;
@@ -87,7 +87,7 @@ public:
     * exists, the cube/cell is sub-divided adding the existing
     * and new particle to the sub cells
     */
-    void add_to_cell(Body* n_bodies, int i)
+    void add_to_cell(Partical* particals, int i)
     {
         if (index == -1) {
             index = i;
@@ -96,15 +96,15 @@ public:
 
         generate_children();
 
-        // The current cell's body must now be re-added to one of its children
-        int sc1 = locate_child(n_bodies[index]);
+        // The current cell's partical must now be re-added to one of its children
+        int sc1 = locate_child(particals[index]);
         children[sc1]->index = index;
 
-        // Locate child for new body
-        int sc2 = locate_child(n_bodies[i]);
+        // Locate child for new partical
+        int sc2 = locate_child(particals[i]);
 
         if (sc1 == sc2) {
-            children[sc1]->add_to_cell(n_bodies, i);
+            children[sc1]->add_to_cell(particals, i);
         } else {
             children[sc2]->index = i;
         }
@@ -112,22 +112,22 @@ public:
 
 
     /* Computes the total mass and the center of mass of the current cell */
-    Cell* compute_cell_properties(Body *n_bodies) {
+    Cell* compute_cell_properties(Partical *particals) {
         if (n_children == 0) {
             if (index != -1) {
-                center = n_bodies[index];
+                center = particals[index];
                 return this;
             }
         } else {      
             double tx = 0, ty = 0, tz = 0;
             for (int i = 0; i < n_children; ++i) {
-                Cell* child = children[i]->compute_cell_properties(n_bodies);
+                Cell* child = children[i]->compute_cell_properties(particals);
 
                 if (child != NULL) {
                     center.mass += (child->center).mass;
-                    tx += n_bodies[child->index].px * (child->center).mass;
-                    ty += n_bodies[child->index].py * (child->center).mass;
-                    tz += n_bodies[child->index].pz * (child->center).mass;            
+                    tx += particals[child->index].px * (child->center).mass;
+                    ty += particals[child->index].py * (child->center).mass;
+                    tz += particals[child->index].pz * (child->center).mass;            
                 }
             }
             
@@ -141,20 +141,20 @@ public:
         return nullptr;
     }
 
-    void compute_force_from_cell(const Body &body, Force * force) const
+    void compute_force_from_cell(const Partical &partical, Force * force) const
     {
         double px_diff, py_diff, pz_diff, factor, d;
         // distance in x direction
-        px_diff = center.px - body.px;
+        px_diff = center.px - partical.px;
         // distance in y direction
-        py_diff = center.py - body.py;
+        py_diff = center.py - partical.py;
         // distance in z direction
-        pz_diff = center.pz - body.pz;
+        pz_diff = center.pz - partical.pz;
 
-        d = body.compute_distance(center);
+        d = partical.compute_distance(center);
 
         // G * m_i * m_j / (||p_j - p_i||)^3
-        factor = G * center.mass * body.mass / (pow(d, 3) + EPSILON); // + epsilon to avoid zero division
+        factor = G * center.mass * partical.mass / (pow(d, 3) + EPSILON); // + epsilon to avoid zero division
         // f_ij = factor * (p_j - p_i)
         force->fx += px_diff * factor; // force in x direction
         force->fy += py_diff * factor; // force in y direction
@@ -177,7 +177,7 @@ private:
 };
 
 /* Generates the octtree for the entire system of particles */
-Cell* generate_octtree(int N, Body* n_bodies) {
+Cell* generate_octtree(int N, Partical* particals) {
     // Initialize root of octtree
     Cell* root_cell = new Cell {X_BOUND, Y_BOUND, Z_BOUND};
     root_cell->index = 0;
@@ -186,13 +186,13 @@ Cell* generate_octtree(int N, Body* n_bodies) {
     for (int i = 1; i < N; ++i) {
         Cell* cell = root_cell;
 
-        // Find which node to add the body to
+        // Find which node to add the partical to
         while (cell->n_children != 0) {
-            int sc = cell->locate_child(n_bodies[i]);
+            int sc = cell->locate_child(particals[i]);
             cell = cell->children[sc];
         }
 
-        cell->add_to_cell(n_bodies, i);
+        cell->add_to_cell(particals, i);
     }
     return root_cell;
 }
@@ -215,21 +215,21 @@ void delete_octtree(Cell* cell) {
  * Computes the force between the particles in the system, 
  * using the clustering-approximation for long distant forces
  */
-void compute_force_from_octtree(Cell* cell, int index, Body * n_bodies, double G, Force * force) {
+void compute_force_from_octtree(Cell* cell, int index, Partical * particals, double G, Force * force) {
     if (cell->n_children == 0) {
         if (cell->index != -1 && cell->index != index) {
-            cell->compute_force_from_cell(n_bodies[index], force);
+            cell->compute_force_from_cell(particals[index], force);
         }
     } else {
-        // double d = compute_distance(n_bodies[index], cell->center);
-        double d = n_bodies[index].compute_distance(cell->center);
+        // double d = compute_distance(particals[index], cell->center);
+        double d = particals[index].compute_distance(cell->center);
         
         if (THETA > (cell->width / d)){ 
             // Use approximation
-            cell->compute_force_from_cell(n_bodies[index], force);
+            cell->compute_force_from_cell(particals[index], force);
         } else {
             for (int i = 0; i < cell->n_children; ++i) {
-                compute_force_from_octtree(cell->children[i], index, n_bodies, G, force);
+                compute_force_from_octtree(cell->children[i], index, particals, G, force);
             }
         }      
     }

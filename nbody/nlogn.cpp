@@ -2,17 +2,17 @@
 
 // compute force for body i based on body j where j != i
 // i: body i
-void compute_force(int i, int N, double G, Body *n_bodies, Force * force, Cell* cell){
+void compute_force(int i, int N, double G, Partical *particals, Force * force, Cell* cell){
     // reset force
     force->fx = 0;
     force->fy = 0;
     force->fz = 0;
 
-    compute_force_from_octtree(cell, i, n_bodies, G, force);
+    compute_force_from_octtree(cell, i, particals, G, force);
 }
 
 // update position and velocity of a body
-void update_body(Body * body_next, int N, double G, double TIME_DELTA, Body body_cur, Force body_force) {
+void update_body(Partical * body_next, int N, double G, double TIME_DELTA, Partical body_cur, Force body_force) {
     // factor = dt / m
     double factor = TIME_DELTA / body_cur.mass;
 
@@ -43,55 +43,55 @@ void update_body(Body * body_next, int N, double G, double TIME_DELTA, Body body
     }
 }
 
-void calculate(int N, int T, double G, double TIME_DELTA, Body *n_bodies) {
-    Body n_bodies_next[N];
+void calculate(int N, int T, double G, double TIME_DELTA, Partical *particals) {
+    Partical particals_next[N];
     for (int i = 0; i < N; ++i) {
-        n_bodies_next[i] = n_bodies[i];
+        particals_next[i] = particals[i];
     }
 
-    Force n_bodies_forces[N];
+    Force particals_forces[N];
     for (int z = 0; z < T; ++z) {
-        Cell* octtree = generate_octtree(N, n_bodies);
+        Cell* octtree = generate_octtree(N, particals);
         // cout << "tree generated " << octtree << endl;
-        octtree->compute_cell_properties(n_bodies);
+        octtree->compute_cell_properties(particals);
         for (int i = 0; i < N; ++i) {
-            compute_force(i, N, G, n_bodies, &(n_bodies_forces[i]), octtree);
+            compute_force(i, N, G, particals, &(particals_forces[i]), octtree);
         }
         // cout << "force computed" << endl;
         for (int i = 0; i < N; ++i) {
-            update_body(&(n_bodies_next[i]), N, G, TIME_DELTA, n_bodies[i], n_bodies_forces[i]);
+            update_body(&(particals_next[i]), N, G, TIME_DELTA, particals[i], particals_forces[i]);
         }
 
         for (int i = 0; i < N; i++) {
-            n_bodies[i] = n_bodies_next[i];
+            particals[i] = particals_next[i];
         }
         delete_octtree(octtree);
     }
 }
 
-// void calculate(int N, int T, double G, double TIME_DELTA, vector<Body> n_bodies) {
-//     Body n_bodies_next[N];
-//     // vector<Body> n_bodies_next {n_bodies}
+// void calculate(int N, int T, double G, double TIME_DELTA, vector<Partical> particals) {
+//     Partical particals_next[N];
+//     // vector<Partical> particals_next {particals}
 //     for (int i = 0; i < N; ++i) {
-//         n_bodies_next[i] = (&n_bodies.front())[i];
+//         particals_next[i] = (&particals.front())[i];
 //     }
 
-//     Force n_bodies_forces[N];
+//     Force particals_forces[N];
 //     for (int z = 0; z < T; ++z) {
-//         Cell* octree = generate_octtree(N, &n_bodies.front());
+//         Cell* octree = generate_octtree(N, &particals.front());
 //         // cout << "tree generated " << octree << endl;
-//         compute_cell_properties(octree, &n_bodies.front());
+//         compute_cell_properties(octree, &particals.front());
 
 //         for (int i = 0; i < N; ++i) {
-//             compute_force(i, N, G, &n_bodies.front(), &(n_bodies_forces[i]), octree);
+//             compute_force(i, N, G, &particals.front(), &(particals_forces[i]), octree);
 //         }
 //         // cout << "force computed" << endl;
 //         for (int i = 0; i < N; ++i) {
-//             update_body(&(n_bodies_next[i]), N, G, TIME_DELTA, n_bodies[i], n_bodies_forces[i]);
+//             update_body(&(particals_next[i]), N, G, TIME_DELTA, particals[i], particals_forces[i]);
 //         }
 
 //         for (int i = 0; i < N; i++) {
-//             n_bodies[i] = n_bodies_next[i];
+//             particals[i] = particals_next[i];
 //         }
 
 //         delete_octtree(octree);
@@ -105,15 +105,15 @@ int main(int argc, char **argv) {
         cout << "unspecified file name" << endl;
     }
 
-    vector<Body> n_bodies {};
-    load_data(argv[1], n_bodies);
+    vector<Partical> particals {};
+    load_data(argv[1], particals);
 
     start = GetTimeStamp();
-    calculate(N, T, G, DT, &n_bodies.front());
-    // calculate(N, T, G, DT, n_bodies);
+    calculate(N, T, G, DT, &particals.front());
+    // calculate(N, T, G, DT, particals);
 
 
-    for (auto const &b: n_bodies) 
+    for (auto const &b: particals) 
     {
         cout << b;
     }
