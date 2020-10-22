@@ -78,47 +78,8 @@ int main(int argc, char **argv) {
         cout << "unspecified file name" << endl;
     }
 
-    std::ifstream file {argv[1]};
-    string line {};
-
-    int N {0};
-
-    //read the particals number
-    std::getline(file, line);
-    std::istringstream num_iss {line};
-
-    // n bodies
-    num_iss >> N;
-    cout << "get " << N << " particals" << endl;
-
-    int T {0};
-    // read the iteration values
-    std::getline(file, line);
-    std::istringstream iteration_iss {line};
-    iteration_iss >> T;
-    cout << "run " << T << " iterations" << endl;
-
     vector<Body> n_bodies {};
-    int count {0};
-
-    // read each partical settings
-    while (std::getline(file, line))
-    {   
-        std::istringstream iss {line};
-        double mass, px, py, pz, vx, vy, vz;
-        if (!(iss >> mass >> px >> py >> pz >> vx >> vy >> vz)) 
-        {
-            break; 
-        }
-
-        n_bodies.emplace_back(count, mass, px, py, pz, vx, vy, vz);
-        count++;
-    }
-
-    if (count != N) {
-        cout << "bodies number unmatched" << " get " << count << ", need " << N << endl;
-        exit(1);
-    }
+    load_data(argv[1], n_bodies);
 
     start = GetTimeStamp();
     calculate(N, T, G, DT, &n_bodies.front());

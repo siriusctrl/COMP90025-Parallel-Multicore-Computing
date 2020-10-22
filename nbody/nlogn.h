@@ -31,6 +31,9 @@ constexpr double G = 6.67e-11;
 constexpr double DT = 0.001;
 constexpr double MASS_BOUND = 1.0e24;
 
+int N {0};
+int T {0};
+
 // Body related calculation
 class Body {
 public:
@@ -56,5 +59,46 @@ std::ostream& operator<<(std::ostream &strm, const Body &body) {
 struct Force {
     double fx, fy, fz;
 };
+
+void load_data(string filename, vector<Body> &n_bodies)
+{
+    std::ifstream file {filename};
+    string line {};
+
+    //read the particals number
+    std::getline(file, line);
+    std::istringstream num_iss {line};
+
+    // n bodies
+    num_iss >> N;
+    cout << "get " << N << " particals" << endl;
+
+    // read the iteration values
+    std::getline(file, line);
+    std::istringstream iteration_iss {line};
+    iteration_iss >> T;
+    cout << "run " << T << " iterations" << endl;
+
+    int count {0};
+
+    // read each partical settings
+    while (std::getline(file, line))
+    {   
+        std::istringstream iss {line};
+        double mass, px, py, pz, vx, vy, vz;
+        if (!(iss >> mass >> px >> py >> pz >> vx >> vy >> vz)) 
+        {
+            break; 
+        }
+
+        n_bodies.emplace_back(count, mass, px, py, pz, vx, vy, vz);
+        count++;
+    }
+
+    if (count != N) {
+        cout << "bodies number unmatched" << " get " << count << ", need " << N << endl;
+        exit(1);
+    }
+}
 
 #endif // __NLOGN_H__
