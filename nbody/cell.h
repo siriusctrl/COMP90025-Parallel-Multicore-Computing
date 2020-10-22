@@ -112,7 +112,7 @@ public:
 
 
     /* Computes the total mass and the center of mass of the current cell */
-    Cell* compute_cell_properties(Body* n_bodies) {
+    Cell* compute_cell_properties(Body *n_bodies) {
         if (n_children == 0) {
             if (index != -1) {
                 center = n_bodies[index];
@@ -139,6 +139,26 @@ public:
             return this;
         }
         return nullptr;
+    }
+
+    void compute_force_from_cell(int i, Body* n_bodies, Force * force)
+    {
+        double px_diff, py_diff, pz_diff, factor, d;
+        // distance in x direction
+        px_diff = center.px - n_bodies[i].px;
+        // distance in y direction
+        py_diff = center.py - n_bodies[i].py;
+        // distance in z direction
+        pz_diff = center.pz - n_bodies[i].pz;
+
+        d = n_bodies[i].compute_distance(center);
+
+        // G * m_i * m_j / (||p_j - p_i||)^3
+        factor = G * center.mass * n_bodies[i].mass / (pow(d, 3) + EPSILON); // + epsilon to avoid zero division
+        // f_ij = factor * (p_j - p_i)
+        force->fx += px_diff * factor; // force in x direction
+        force->fy += py_diff * factor; // force in y direction
+        force->fz += pz_diff * factor; // force in z direction 
     }
 
 private:
@@ -191,28 +211,6 @@ void delete_octtree(Cell* cell) {
     delete cell;
 }
 
-/* Computes the force experienced between a particle and a cell */
-void compute_force_from_cell(Cell* cell, int i, Body * n_bodies, double G, Force * force) {
-    double px_diff, py_diff, pz_diff, factor, euclidean_distance;
-    // distance in x direction
-    px_diff = (cell->center).px - n_bodies[i].px;
-    // distance in y direction
-    py_diff = (cell->center).py - n_bodies[i].py;
-    // distance in z direction
-    pz_diff = (cell->center).pz - n_bodies[i].pz;
-
-    // ||p_j - p_i||
-    euclidean_distance = sqrt(pow(px_diff, 2) + pow(py_diff, 2) + pow(pz_diff, 2));
-
-    // G * m_i * m_j / (||p_j - p_i||)^3
-    factor = G * (cell->center).mass * n_bodies[i].mass / (pow(euclidean_distance, 3) + EPSILON);
-    
-    // f_ij = factor * (p_j - p_i)
-    force->fx += px_diff * factor; // force in x direction
-    force->fy += py_diff * factor; // force in y direction
-    force->fz += pz_diff * factor; // force in z direction 
-}
-
 /* 
  * Computes the force between the particles in the system, 
  * using the clustering-approximation for long distant forces
@@ -220,7 +218,7 @@ void compute_force_from_cell(Cell* cell, int i, Body * n_bodies, double G, Force
 void compute_force_from_octtree(Cell* cell, int index, Body * n_bodies, double G, Force * force) {
     if (cell->n_children == 0) {
         if (cell->index != -1 && cell->index != index) {
-            compute_force_from_cell(cell, index, n_bodies, G, force);
+            cell->compute_force_from_cell(index, n_bodies, force);
         }
     } else {
         // double d = compute_distance(n_bodies[index], cell->center);
@@ -228,7 +226,7 @@ void compute_force_from_octtree(Cell* cell, int index, Body * n_bodies, double G
         
         if (THETA > (cell->width / d)){ 
             // Use approximation
-            compute_force_from_cell(cell, index, n_bodies, G, force);         
+            cell->compute_force_from_cell(index, n_bodies, force);         
         } else {
             for (int i = 0; i < cell->n_children; ++i) {
                 compute_force_from_octtree(cell->children[i], index, n_bodies, G, force);
