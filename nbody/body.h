@@ -34,7 +34,7 @@ public:
         // cout << "body init successfully" << endl;
     }
 
-    double compute_distance(const Body &other)
+    double compute_distance(const Body &other) const
     {
         double dx, dy, dz;
         dx = other.px - px;

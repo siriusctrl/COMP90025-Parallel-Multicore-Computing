@@ -141,20 +141,20 @@ public:
         return nullptr;
     }
 
-    void compute_force_from_cell(int i, Body* n_bodies, Force * force)
+    void compute_force_from_cell(const Body &body, Force * force) const
     {
         double px_diff, py_diff, pz_diff, factor, d;
         // distance in x direction
-        px_diff = center.px - n_bodies[i].px;
+        px_diff = center.px - body.px;
         // distance in y direction
-        py_diff = center.py - n_bodies[i].py;
+        py_diff = center.py - body.py;
         // distance in z direction
-        pz_diff = center.pz - n_bodies[i].pz;
+        pz_diff = center.pz - body.pz;
 
-        d = n_bodies[i].compute_distance(center);
+        d = body.compute_distance(center);
 
         // G * m_i * m_j / (||p_j - p_i||)^3
-        factor = G * center.mass * n_bodies[i].mass / (pow(d, 3) + EPSILON); // + epsilon to avoid zero division
+        factor = G * center.mass * body.mass / (pow(d, 3) + EPSILON); // + epsilon to avoid zero division
         // f_ij = factor * (p_j - p_i)
         force->fx += px_diff * factor; // force in x direction
         force->fy += py_diff * factor; // force in y direction
@@ -218,7 +218,7 @@ void delete_octtree(Cell* cell) {
 void compute_force_from_octtree(Cell* cell, int index, Body * n_bodies, double G, Force * force) {
     if (cell->n_children == 0) {
         if (cell->index != -1 && cell->index != index) {
-            cell->compute_force_from_cell(index, n_bodies, force);
+            cell->compute_force_from_cell(n_bodies[index], force);
         }
     } else {
         // double d = compute_distance(n_bodies[index], cell->center);
@@ -226,7 +226,7 @@ void compute_force_from_octtree(Cell* cell, int index, Body * n_bodies, double G
         
         if (THETA > (cell->width / d)){ 
             // Use approximation
-            cell->compute_force_from_cell(index, n_bodies, force);         
+            cell->compute_force_from_cell(n_bodies[index], force);
         } else {
             for (int i = 0; i < cell->n_children; ++i) {
                 compute_force_from_octtree(cell->children[i], index, n_bodies, G, force);
