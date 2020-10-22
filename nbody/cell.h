@@ -226,20 +226,8 @@ Cell* compute_cell_properties(Cell* cell, Body* n_bodies) {
 
         return cell;
     }
+
     return NULL;
-}
-
-inline double compute_distance(Body body_i, Body body_j) {
-    double px_diff, py_diff, pz_diff;
-    // distance in x direction
-    px_diff = body_j.px - body_i.px;
-    // distance in y direction
-    py_diff = body_j.py - body_i.py;
-    // distance in z direction
-    pz_diff = body_j.pz - body_i.pz;
-
-    // ||p_j - p_i||
-    return sqrt(pow(px_diff, 2) + pow(py_diff, 2) + pow(pz_diff, 2));
 }
 
 /* Computes the force experienced between a particle and a cell */
@@ -272,7 +260,8 @@ void compute_force_from_octtree(Cell* cell, int index, Body * n_bodies, double G
             compute_force_from_cell(cell, index, n_bodies, G, force);
         }
     } else {
-        double d = compute_distance(n_bodies[index], cell->center);
+        // double d = compute_distance(n_bodies[index], cell->center);
+        double d = n_bodies[index].compute_distance(cell->center);
         
         if (THETA > (cell->width / d)){ 
             // Use approximation

@@ -113,12 +113,14 @@ int main(int argc, char **argv) {
     start = GetTimeStamp();
     calculate(N, T, G, DT, &n_bodies.front());
     // calculate(N, T, G, DT, n_bodies);
-    cout << "time = " << GetTimeStamp() - start << " ns" << endl;
+
 
     for (auto const &b: n_bodies) 
     {
         cout << b;
     }
+
+    cout << "time = " << GetTimeStamp() - start << " ns" << endl;
 
     return 0;
 }

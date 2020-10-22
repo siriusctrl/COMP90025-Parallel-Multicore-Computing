@@ -50,6 +50,15 @@ public:
     {
         // cout << "body init successfully" << endl;
     }
+
+    double compute_distance(const Body &other)
+    {
+        double dx, dy, dz;
+        dx = other.px - px;
+        dy = other.py - py;
+        dz = other.pz - pz;
+        return sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2));
+    }
 };
 
 // Overloaded operator for '<<' for struct output
@@ -60,7 +69,8 @@ std::ostream& operator<<(std::ostream &strm, const Body &body) {
     return strm;
 }
 
-struct Force {
+class Force {
+public:
     double fx, fy, fz;
 };
 
