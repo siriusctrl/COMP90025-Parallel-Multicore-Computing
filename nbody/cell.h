@@ -44,7 +44,9 @@ public:
         set_location_of_children(w, h, d);
     }
 
-    /* Locates the child to which the particle must be added */
+    /* 
+     * Locates the child to which the particle must be added 
+     */
     int locate_child(const Body &body)
     {
         // Determine which child to add the body to
@@ -79,6 +81,35 @@ public:
         }
     }
 
+
+    /* 
+    * Added a particle to the cell. If a particle already
+    * exists, the cube/cell is sub-divided adding the existing
+    * and new particle to the sub cells
+    */
+    void add_to_cell(Body* n_bodies, int i)
+    {
+        if (index == -1) {
+            index = i;
+            return;
+        }
+
+        generate_children();
+
+        // The current cell's body must now be re-added to one of its children
+        int sc1 = locate_child(n_bodies[index]);
+        children[sc1]->index = index;
+
+        // Locate child for new body
+        int sc2 = locate_child(n_bodies[i]);
+
+        if (sc1 == sc2) {
+            children[sc1]->add_to_cell(n_bodies, i);
+        } else {
+            children[sc2]->index = i;
+        }
+    }
+
 private:
 
     void set_location_of_children(double w, double h, double d)
@@ -93,34 +124,6 @@ private:
         ((children[7])->center).set_coordinates(center, 0, h, d);
     }
 };
-
-/* 
- * Added a particle to the cell. If a particle already
- * exists, the cube/cell is sub-divided adding the existing
- * and new particle to the sub cells
- */
-void add_to_cell(Cell* cell, Body* n_bodies, int i) {
-        if (cell->index == -1) {         
-            cell->index = i;
-            return;         
-        }
-            
-    //    generate_children(cell);
-        cell->generate_children();
-
-    // The current cell's body must now be re-added to one of its children
-    int sc1 = cell->locate_child(n_bodies[cell->index]);
-    cell->children[sc1]->index = cell->index;   
-
-    // Locate child for new body
-    int sc2 = cell->locate_child(n_bodies[i]);
-
-        if (sc1 == sc2) {
-            add_to_cell(cell->children[sc1], n_bodies, i);
-        } else {
-            cell->children[sc2]->index = i;  
-        }
-}
 
 /* Generates the octtree for the entire system of particles */
 Cell* generate_octtree(int N, Body* n_bodies) {
@@ -138,7 +141,7 @@ Cell* generate_octtree(int N, Body* n_bodies) {
             cell = cell->children[sc];
         }
 
-        add_to_cell(cell, n_bodies, i);
+        cell->add_to_cell(n_bodies, i);
     }
     return root_cell;
 }
@@ -146,7 +149,6 @@ Cell* generate_octtree(int N, Body* n_bodies) {
 /* Deletes the octtree */
 void delete_octtree(Cell* cell) {
     if (cell->n_children == 0) {
-        // free(cell);
         delete cell;
         return;
     }
@@ -155,7 +157,6 @@ void delete_octtree(Cell* cell) {
         delete_octtree(cell->children[i]);
     }
 
-    // free(cell);
     delete cell;
 }
 
@@ -211,7 +212,8 @@ void compute_force_from_cell(Cell* cell, int i, Body * n_bodies, double G, Force
     force->fz += pz_diff * factor; // force in z direction 
 }
 
-/* Computes the force between the particles in the system, 
+/* 
+ * Computes the force between the particles in the system, 
  * using the clustering-approximation for long distant forces
  */
 void compute_force_from_octtree(Cell* cell, int index, Body * n_bodies, double G, Force * force) {
