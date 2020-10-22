@@ -51,11 +51,11 @@ void calculate(int N, int T, double G, double TIME_DELTA, Body *n_bodies) {
 
     Force n_bodies_forces[N];
     for (int z = 0; z < T; ++z) {
-        Cell* octree = generate_octtree(N, n_bodies);
-        // cout << "tree generated " << octree << endl;
-        compute_cell_properties(octree, n_bodies);
+        Cell* octtree = generate_octtree(N, n_bodies);
+        // cout << "tree generated " << octtree << endl;
+        octtree->compute_cell_properties(n_bodies);
         for (int i = 0; i < N; ++i) {
-            compute_force(i, N, G, n_bodies, &(n_bodies_forces[i]), octree);
+            compute_force(i, N, G, n_bodies, &(n_bodies_forces[i]), octtree);
         }
         // cout << "force computed" << endl;
         for (int i = 0; i < N; ++i) {
@@ -65,7 +65,7 @@ void calculate(int N, int T, double G, double TIME_DELTA, Body *n_bodies) {
         for (int i = 0; i < N; i++) {
             n_bodies[i] = n_bodies_next[i];
         }
-        delete_octtree(octree);
+        delete_octtree(octtree);
     }
 }
 

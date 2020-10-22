@@ -110,6 +110,37 @@ public:
         }
     }
 
+
+    /* Computes the total mass and the center of mass of the current cell */
+    Cell* compute_cell_properties(Body* n_bodies) {
+        if (n_children == 0) {
+            if (index != -1) {
+                center = n_bodies[index];
+                return this;
+            }
+        } else {      
+            double tx = 0, ty = 0, tz = 0;
+            for (int i = 0; i < n_children; ++i) {
+                Cell* child = children[i]->compute_cell_properties(n_bodies);
+
+                if (child != NULL) {
+                    center.mass += (child->center).mass;
+                    tx += n_bodies[child->index].px * (child->center).mass;
+                    ty += n_bodies[child->index].py * (child->center).mass;
+                    tz += n_bodies[child->index].pz * (child->center).mass;            
+                }
+            }
+            
+            // Compute center of mass
+            center.px = tx / center.mass;
+            center.py = ty / center.mass;
+            center.pz = tz / center.mass;
+
+            return this;
+        }
+        return nullptr;
+    }
+
 private:
 
     void set_location_of_children(double w, double h, double d)
@@ -158,36 +189,6 @@ void delete_octtree(Cell* cell) {
     }
 
     delete cell;
-}
-
-/* Computes the total mass and the center of mass of the current cell */
-Cell* compute_cell_properties(Cell* cell, Body* n_bodies) {
-    if (cell->n_children == 0) {
-        if (cell->index != -1) {
-            cell->center = n_bodies[cell->index];
-            return cell;
-        }
-    } else {      
-        double tx = 0, ty = 0, tz = 0;
-        for (int i = 0; i < cell->n_children; ++i) {
-            Cell* child = compute_cell_properties(cell->children[i], n_bodies);
-            if (child != NULL) {
-                (cell->center).mass += (child->center).mass;
-                tx += n_bodies[child->index].px * (child->center).mass;
-                ty += n_bodies[child->index].py * (child->center).mass;
-                tz += n_bodies[child->index].pz * (child->center).mass;            
-            }
-        }
-        
-        // Compute center of mass
-        (cell->center).px = tx / (cell->center).mass;
-        (cell->center).py = ty / (cell->center).mass;
-        (cell->center).pz = tz / (cell->center).mass;
-
-        return cell;
-    }
-
-    return NULL;
 }
 
 /* Computes the force experienced between a particle and a cell */
