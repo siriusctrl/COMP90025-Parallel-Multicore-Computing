@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/local/lib/openmpi"
+            ],
+            "defines": [],
+            "macFrameworkPath": [],
+            "compilerPath": "/Users/xinyaoniu/anaconda3/bin/mpicxx",
+            "cStandard": "c11",
+            "cppStandard": "gnu++14"
+        }
+    ],
+    "version": 4
+}
