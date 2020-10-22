@@ -20,19 +20,21 @@ constexpr double EPSILON = 0.000001;
 constexpr double X_BOUND = 1.0e6;      // Width of space
 constexpr double Y_BOUND = 1.0e6;      // Height of space
 constexpr double Z_BOUND = 1.0e6;      // Depth of space
+constexpr double THETA   = 0;        // Opening angle, for approximation in Barned hut algorithm
+
 constexpr double G = 6.67e-11;
 constexpr double DT = 0.001;
 constexpr double MASS_BOUND = 1.0e24;
-constexpr double THETA   = 0;        // Opening angle, for approximation in Barned hut algorithm
 
 // Body related calculation
 struct Body {
     double mass, px, py, pz, vx, vy, vz;
 };
 // Overloaded operator for '<<' for struct output
-ostream& operator << (ostream& os, const Body& body) {
-    os << "body[" << body.px << "][" << body.py << "][" << body.pz << "] velocity: (" << body.vx << ", " << body.vy << ", " << body.vz << ") mass: " << body.mass;
-    return os;
+std::ostream& operator<<(std::ostream &strm, const Body &p) {
+    strm << "mass: " << p.mass << " px: " << p.px << " py: " << p.py << " pz: " << p.pz;
+    strm << " vx: " << p.vx << " vy: " << p.vy << " vz: " << p.vz;
+    return strm;
 }
 
 struct Force {
@@ -393,30 +395,32 @@ int main(int argc, char **argv) {
     int N;
     // n iterations
     int T;
-    // frativity const
-    double G;
-    // time delta
-    double TIME_DELTA;
     cin >> N;
     cin >> T;
-    cin >> G;
-    cin >> TIME_DELTA;
     
     // cout << T << " " << G << " " << TIME_DELTA << endl;
 
     Body n_bodies[N];
     for (int i = 0; i < N; ++i) {
         cin >> n_bodies[i].mass;
+        n_bodies[i].mass *= MASS_BOUND;
+
         cin >> n_bodies[i].px;
+        n_bodies[i].px *= X_BOUND;
+
         cin >> n_bodies[i].py;
+        n_bodies[i].py *= Y_BOUND;
+
         cin >> n_bodies[i].pz;
+        n_bodies[i].pz *= Z_BOUND;
+
         cin >> n_bodies[i].vx;
         cin >> n_bodies[i].vy;
         cin >> n_bodies[i].vz;
     }
 
     start = GetTimeStamp();
-    calculate(N, T, G, TIME_DELTA, n_bodies);
+    calculate(N, T, G, DT, n_bodies);
     cout << "time = " << GetTimeStamp() - start << endl;
 
     cout << N << endl;
@@ -426,6 +430,3 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-
-// g++ -std=c++14 -O3 -o nlogn_sequential nlogn_sequential.cpp
-// ./nlogn_sequential < ../body_10.data

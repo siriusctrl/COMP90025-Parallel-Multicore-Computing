@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 14)
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
 
-add_executable(nlogn body.h nlogn.h nlogn.cpp)
+add_executable(nlogn nlogn.cpp)
 
 # link MPI
 target_link_libraries(nlogn ${MPI_LIBRARIES})
