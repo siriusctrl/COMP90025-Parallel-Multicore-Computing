@@ -21,23 +21,24 @@ typedef struct Cell  {
 
 /* Creates a cell to be used in the octtree */
 Cell* create_cell(double width, double height, double depth) {
-   Cell* cell = (Cell*) malloc(sizeof(Cell));
-   cell->index = -1;
-   cell->n_children = 0;
-   
-   (cell->center).mass = 0;
-   (cell->center).px   = 0;
-   (cell->center).py   = 0;
-   (cell->center).pz   = 0;
-   (cell->center).vx   = 0;
-   (cell->center).vy   = 0;
-   (cell->center).vz   = 0;
+//    Cell* cell = (Cell*) malloc(sizeof(Cell));
+    Cell* cell = new Cell;
+    cell->index = -1;
+    cell->n_children = 0;
 
-   cell->width = width;
-   cell->height = height;
-   cell->depth = depth;   
-   
-   return cell;
+    (cell->center).mass = 0;
+    (cell->center).px   = 0;
+    (cell->center).py   = 0;
+    (cell->center).pz   = 0;
+    (cell->center).vx   = 0;
+    (cell->center).vy   = 0;
+    (cell->center).vz   = 0;
+
+    cell->width = width;
+    cell->height = height;
+    cell->depth = depth;   
+
+    return cell;
 }
 
 /* sets the location of the children relative to the current cell */
@@ -131,7 +132,8 @@ int locate_child(Cell* cell, Body body) {
     }
 }
 
-/* Added a particle to the cell. If a particle already
+/* 
+ * Added a particle to the cell. If a particle already
  * exists, the cube/cell is sub-divided adding the existing
  * and new particle to the sub cells
  */
@@ -181,7 +183,8 @@ Cell* generate_octtree(int N, Body* n_bodies) {
 /* Deletes the octtree */
 void delete_octtree(Cell* cell) {
     if (cell->n_children == 0) {
-        free(cell);
+        // free(cell);
+        delete cell;
         return;
     }
 
@@ -189,7 +192,8 @@ void delete_octtree(Cell* cell) {
         delete_octtree(cell->children[i]);
     }
 
-    free(cell);
+    // free(cell);
+    delete cell;
 }
 
 /* Computes the total mass and the center of mass of the current cell */

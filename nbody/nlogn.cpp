@@ -71,6 +71,35 @@ void calculate(int N, int T, double G, double TIME_DELTA, Body *n_bodies) {
     }
 }
 
+// void calculate(int N, int T, double G, double TIME_DELTA, vector<Body> n_bodies) {
+//     Body n_bodies_next[N];
+//     // vector<Body> n_bodies_next {n_bodies}
+//     for (int i = 0; i < N; ++i) {
+//         n_bodies_next[i] = (&n_bodies.front())[i];
+//     }
+
+//     Force n_bodies_forces[N];
+//     for (int z = 0; z < T; ++z) {
+//         Cell* octree = generate_octtree(N, &n_bodies.front());
+//         // cout << "tree generated " << octree << endl;
+//         compute_cell_properties(octree, &n_bodies.front());
+
+//         for (int i = 0; i < N; ++i) {
+//             compute_force(i, N, G, &n_bodies.front(), &(n_bodies_forces[i]), octree);
+//         }
+//         // cout << "force computed" << endl;
+//         for (int i = 0; i < N; ++i) {
+//             update_body(&(n_bodies_next[i]), N, G, TIME_DELTA, n_bodies[i], n_bodies_forces[i]);
+//         }
+
+//         for (int i = 0; i < N; i++) {
+//             n_bodies[i] = n_bodies_next[i];
+//         }
+
+//         delete_octtree(octree);
+//     }
+// }
+
 int main(int argc, char **argv) {
     uint64_t start, end;
 
@@ -83,6 +112,7 @@ int main(int argc, char **argv) {
 
     start = GetTimeStamp();
     calculate(N, T, G, DT, &n_bodies.front());
+    // calculate(N, T, G, DT, n_bodies);
     cout << "time = " << GetTimeStamp() - start << " ns" << endl;
 
     for (auto const &b: n_bodies) 
