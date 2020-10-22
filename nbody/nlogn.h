@@ -41,8 +41,12 @@ public:
     double mass, px, py, pz, vx, vy, vz;
     // it does not compile if we add constructor here
     Body() = default;
+    Body(double init) 
+    {   
+        Body(init, init, init, init, init, init, init, init);
+    }
     Body(int count, double mass, double px, double py, double pz, double vx, double vy, double vz) 
-            : count {count}, mass {mass*MASS_BOUND}, px {px * X_BOUND}, py {py * Y_BOUND}, pz {pz * Z_BOUND}, vx {vx}, vy {vy}, vz {vz}
+        : count {count}, mass {mass*MASS_BOUND}, px {px * X_BOUND}, py {py * Y_BOUND}, pz {pz * Z_BOUND}, vx {vx}, vy {vy}, vz {vz}
     {
         // cout << "body init successfully" << endl;
     }

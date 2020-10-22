@@ -3,11 +3,22 @@
 
 #include "nlogn.h"
 
-// **************************************************************************
-// octtree data structure and helper methods starts
-// **************************************************************************
-/* Cubic cell representing tree node in Barnes-Hut algorithm */
-typedef struct Cell  {
+
+// /* Cubic cell representing tree node in Barnes-Hut algorithm */
+// typedef struct Cell  {
+//    int index;                   // Index into arrays to identify particle's 
+//                                 // position and mass
+//    int n_children;              // Indicate whether cell is leaf or has 8 children
+//    Body center;                 // center of approximate body
+//                                 //  - Mass of particle of total mass of subtree
+//                                 //  - position of cell(cube) in space
+//                                 //  - position of center of mass of cell
+//    double width, height, depth; // Width, Height, and Depth of cell
+//    struct Cell* children[8];    // Pointers to child nodes
+// } Cell;
+
+class Cell  {
+public:
    int index;                   // Index into arrays to identify particle's 
                                 // position and mass
    int n_children;              // Indicate whether cell is leaf or has 8 children
@@ -16,28 +27,21 @@ typedef struct Cell  {
                                 //  - position of cell(cube) in space
                                 //  - position of center of mass of cell
    double width, height, depth; // Width, Height, and Depth of cell
-   struct Cell* children[8];    // Pointers to child nodes
-} Cell;
+   Cell* children[8];    // Pointers to child nodes
+
+   Cell() = default;
+   Cell(double width, double height, double depth)
+    : width {width}, height {height}, depth {depth}, index {-1}, n_children {0}
+    {
+        // cout << "Cell created" << endl;
+        center = Body(0.0);
+    }
+};
 
 /* Creates a cell to be used in the octtree */
 Cell* create_cell(double width, double height, double depth) {
 //    Cell* cell = (Cell*) malloc(sizeof(Cell));
-    Cell* cell = new Cell;
-    cell->index = -1;
-    cell->n_children = 0;
-
-    (cell->center).mass = 0;
-    (cell->center).px   = 0;
-    (cell->center).py   = 0;
-    (cell->center).pz   = 0;
-    (cell->center).vx   = 0;
-    (cell->center).vy   = 0;
-    (cell->center).vz   = 0;
-
-    cell->width = width;
-    cell->height = height;
-    cell->depth = depth;   
-
+    Cell* cell = new Cell {width, height, depth};
     return cell;
 }
 
@@ -281,7 +285,4 @@ void compute_force_from_octtree(Cell* cell, int index, Body * n_bodies, double G
     }
 }
 
-// **************************************************************************
-// octtree data structure and helper methods ends
-// **************************************************************************
 #endif // __CELL_H__
