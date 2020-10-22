@@ -3,80 +3,59 @@
 
 #include "nlogn.h"
 
-
-// /* Cubic cell representing tree node in Barnes-Hut algorithm */
-// typedef struct Cell  {
-//    int index;                   // Index into arrays to identify particle's 
-//                                 // position and mass
-//    int n_children;              // Indicate whether cell is leaf or has 8 children
-//    Body center;                 // center of approximate body
-//                                 //  - Mass of particle of total mass of subtree
-//                                 //  - position of cell(cube) in space
-//                                 //  - position of center of mass of cell
-//    double width, height, depth; // Width, Height, and Depth of cell
-//    struct Cell* children[8];    // Pointers to child nodes
-// } Cell;
-
 class Cell  {
 public:
-   int index;                   // Index into arrays to identify particle's 
-                                // position and mass
-   int n_children;              // Indicate whether cell is leaf or has 8 children
-   Body center;                 // center of approximate body
-                                //  - Mass of particle of total mass of subtree
-                                //  - position of cell(cube) in space
-                                //  - position of center of mass of cell
-   double width, height, depth; // Width, Height, and Depth of cell
-   Cell* children[8];    // Pointers to child nodes
-
-   Cell() = default;
-   Cell(double width, double height, double depth)
-    : width {width}, height {height}, depth {depth}, index {-1}, n_children {0}
+    int index;                   // Index into arrays to identify particle's 
+                                    // position and mass
+    int n_children;              // Indicate whether cell is leaf or has 8 children
+    Body center;                 // center of approximate body
+                                    //  - Mass of particle of total mass of subtree
+                                    //  - position of cell(cube) in space
+                                    //  - position of center of mass of cell
+    double width, height, depth; // Width, Height, and Depth of cell
+    Cell* children[8];    // Pointers to child nodes
+    // constructors
+    Cell() = default;
+    Cell(double width, double height, double depth)
+        : width {width}, height {height}, depth {depth}, index {-1}, n_children {0}
+        {
+            // cout << "Cell created" << endl;
+            center = Body(0.0);
+        }
+    
+    /*
+    * Generates new children for the current cell, forming a subtree. 
+    * The current cell will no longer be a leaf
+    */
+    void generate_children() 
     {
-        // cout << "Cell created" << endl;
-        center = Body(0.0);
+        double w  = width / 2.0;
+        double h = height / 2.0;
+        double d  = depth / 2.0;
+
+        // Cell no longer a leaf
+        n_children = 8;
+
+        // Create and initialize new children   
+        for (int i = 0; i < n_children; ++i) {
+            children[i] = new Cell {w, h, d};
+        }
+
+        set_location_of_children(w, h, d);
+    }
+
+    void set_location_of_children(double w, double h, double d)
+    {
+        ((children[0])->center).set_coordinates(center);
+        ((children[1])->center).set_coordinates(center, w, 0, 0);
+        ((children[2])->center).set_coordinates(center, w, 0, d);
+        ((children[3])->center).set_coordinates(center, 0, 0, d);
+        ((children[4])->center).set_coordinates(center, 0, h, 0);
+        ((children[5])->center).set_coordinates(center, w, h, 0);
+        ((children[6])->center).set_coordinates(center, w, h, d);
+        ((children[7])->center).set_coordinates(center, 0, h, d);
     }
 };
-
-/* Creates a cell to be used in the octtree */
-Cell* create_cell(double width, double height, double depth) {
-//    Cell* cell = (Cell*) malloc(sizeof(Cell));
-    Cell* cell = new Cell {width, height, depth};
-    return cell;
-}
-
-/* sets the location of the children relative to the current cell */
-void set_location_of_children(Cell* cell, double width, double height, double depth){
-    ((cell->children[0])->center).set_coordinates(cell->center);
-    ((cell->children[1])->center).set_coordinates(cell->center, width, 0, 0);
-    ((cell->children[2])->center).set_coordinates(cell->center, width, 0, depth);
-    ((cell->children[3])->center).set_coordinates(cell->center, 0, 0, depth);
-    ((cell->children[4])->center).set_coordinates(cell->center, 0, height, 0);
-    ((cell->children[5])->center).set_coordinates(cell->center, width, height, 0);
-    ((cell->children[6])->center).set_coordinates(cell->center, width, height, depth);
-    ((cell->children[7])->center).set_coordinates(cell->center, 0, height, depth);
-}
-
-/*
- * Generates new children for the current cell, forming a subtree. 
- * The current cell will no longer be a leaf
- */
-void generate_children(Cell* cell) {
-   // Calculate subcell dimensions
-   double width  = cell->width / 2.0;
-   double height = cell->height / 2.0;
-   double depth  = cell->depth / 2.0;
-
-   // Cell no longer a leaf
-   cell->n_children = 8;   
-   
-   // Create and initialize new children   
-   for (int i = 0; i < cell->n_children; ++i) {
-      cell->children[i] = create_cell(width, height, depth);
-   }
-   
-   set_location_of_children(cell, width, height, depth);   
-}
 
 /* Locates the child to which the particle must be added */
 int locate_child(Cell* cell, Body body) {
@@ -123,7 +102,8 @@ void add_to_cell(Cell* cell, Body* n_bodies, int i) {
         return;         
     }
          
-   generate_children(cell);
+//    generate_children(cell);
+    cell->generate_children();
 
    // The current cell's body must now be re-added to one of its children
    int sc1 = locate_child(cell, n_bodies[cell->index]);
@@ -142,7 +122,7 @@ void add_to_cell(Cell* cell, Body* n_bodies, int i) {
 /* Generates the octtree for the entire system of particles */
 Cell* generate_octtree(int N, Body* n_bodies) {
     // Initialize root of octtree
-    Cell* root_cell = create_cell(X_BOUND, Y_BOUND, Z_BOUND);
+    Cell* root_cell = new Cell {X_BOUND, Y_BOUND, Z_BOUND};
     root_cell->index = 0;
     // cout << root_cell->n_children << endl;
 
