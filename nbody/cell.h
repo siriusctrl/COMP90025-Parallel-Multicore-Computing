@@ -44,6 +44,43 @@ public:
         set_location_of_children(w, h, d);
     }
 
+    /* Locates the child to which the particle must be added */
+    int locate_child(const Body &body)
+    {
+        // Determine which child to add the body to
+        if (body.px > children[6]->center.px) {
+            if (body.py > children[6]->center.py) {
+                if (body.pz > children[6]->center.pz) {
+                    return 6;
+                } else {
+                    return 5;
+                }
+            } else {
+                if (body.pz > children[6]->center.pz) {
+                    return 2;
+                } else {
+                    return 1;
+                }
+            }
+        } else {
+            if (body.py > children[6]->center.py) {
+                if (body.pz > children[6]->center.pz) {
+                    return 7;
+                } else {
+                    return 4;
+                }
+            } else {
+                if (body.pz > children[6]->center.pz) {
+                    return 3;
+                } else {
+                    return 0;
+                }
+            }
+        }
+    }
+
+private:
+
     void set_location_of_children(double w, double h, double d)
     {
         ((children[0])->center).set_coordinates(center);
@@ -57,66 +94,32 @@ public:
     }
 };
 
-/* Locates the child to which the particle must be added */
-int locate_child(Cell* cell, Body body) {
-    // Determine which child to add the body to
-    if (body.px > (cell->children[6])->center.px) {
-        if (body.py > (cell->children[6])->center.py) {
-            if (body.pz > (cell->children[6])->center.pz) {
-                return 6;
-            } else {
-                return 5;
-            }
-        } else {
-            if (body.pz > (cell->children[6])->center.pz) {
-                return 2;
-            } else {
-                return 1;
-            }
-        }
-    } else {
-        if (body.py > (cell->children[6])->center.py) {
-            if (body.pz > (cell->children[6])->center.pz) {
-                return 7;
-            } else {
-                return 4;
-            }
-        } else {
-            if (body.pz > (cell->children[6])->center.pz) {
-                return 3;
-            } else {
-                return 0;
-            }
-        }
-    }
-}
-
 /* 
  * Added a particle to the cell. If a particle already
  * exists, the cube/cell is sub-divided adding the existing
  * and new particle to the sub cells
  */
 void add_to_cell(Cell* cell, Body* n_bodies, int i) {
-    if (cell->index == -1) {         
-        cell->index = i;
-        return;         
-    }
-         
-//    generate_children(cell);
-    cell->generate_children();
+        if (cell->index == -1) {         
+            cell->index = i;
+            return;         
+        }
+            
+    //    generate_children(cell);
+        cell->generate_children();
 
-   // The current cell's body must now be re-added to one of its children
-   int sc1 = locate_child(cell, n_bodies[cell->index]);
-   cell->children[sc1]->index = cell->index;   
+    // The current cell's body must now be re-added to one of its children
+    int sc1 = cell->locate_child(n_bodies[cell->index]);
+    cell->children[sc1]->index = cell->index;   
 
-   // Locate child for new body
-   int sc2 = locate_child(cell, n_bodies[i]);
+    // Locate child for new body
+    int sc2 = cell->locate_child(n_bodies[i]);
 
-    if (sc1 == sc2) {
-        add_to_cell(cell->children[sc1], n_bodies, i);
-    } else {
-        cell->children[sc2]->index = i;  
-    }
+        if (sc1 == sc2) {
+            add_to_cell(cell->children[sc1], n_bodies, i);
+        } else {
+            cell->children[sc2]->index = i;  
+        }
 }
 
 /* Generates the octtree for the entire system of particles */
@@ -131,7 +134,7 @@ Cell* generate_octtree(int N, Body* n_bodies) {
 
         // Find which node to add the body to
         while (cell->n_children != 0) {
-            int sc = locate_child(cell, n_bodies[i]);
+            int sc = cell->locate_child(n_bodies[i]);
             cell = cell->children[sc];
         }
 
