@@ -12,13 +12,13 @@ void compute_force(int i, int N, Partical *particals, Force * force, Cell* cell)
 }
 
 // update position and velocity of a body
-void update_body(Partical * body_next, int N, double G, double TIME_DELTA, Partical body_cur, Force body_force) {
+void update_body(Partical * body_next, int N, Partical body_cur, Force body_force) {
     // factor = dt / m
-    double factor = TIME_DELTA / body_cur.mass;
+    double factor = DT / body_cur.mass;
 
-    body_next->px += TIME_DELTA * body_cur.vx;
-    body_next->py += TIME_DELTA * body_cur.vy;
-    body_next->pz += TIME_DELTA * body_cur.vz;
+    body_next->px += DT * body_cur.vx;
+    body_next->py += DT * body_cur.vy;
+    body_next->pz += DT * body_cur.vz;
 
     // v = dt * a = dt * (F / m) = (dt / m) * F = factor * F
     body_next->vx += factor * body_force.fx;
@@ -31,11 +31,13 @@ void update_body(Partical * body_next, int N, double G, double TIME_DELTA, Parti
     } else if (body_next->px <= 0) {
         body_next->vx = abs(body_next->vx);
     }
+
     if (body_next->py >= Y_BOUND) {
         body_next->vy = -1 * abs(body_next->vy);
     } else if (body_next->py <= 0) {
         body_next->vy = abs(body_next->vy);
     }
+
     if (body_next->pz >= Z_BOUND) {
         body_next->vz = -1 * abs(body_next->vz);
     } else if (body_next->pz <= 0) {
@@ -43,7 +45,7 @@ void update_body(Partical * body_next, int N, double G, double TIME_DELTA, Parti
     }
 }
 
-void calculate(int N, int T, double G, double TIME_DELTA, Partical *particals) {
+void calculate(int N, int T, Partical *particals) {
     Partical particals_next[N];
     for (int i = 0; i < N; ++i) {
         particals_next[i] = particals[i];
@@ -57,9 +59,9 @@ void calculate(int N, int T, double G, double TIME_DELTA, Partical *particals) {
         for (int i = 0; i < N; ++i) {
             compute_force(i, N, particals, &(particals_forces[i]), octtree);
         }
-        // cout << "force computed" << endl;
+
         for (int i = 0; i < N; ++i) {
-            update_body(&(particals_next[i]), N, G, TIME_DELTA, particals[i], particals_forces[i]);
+            update_body(&(particals_next[i]), N, particals[i], particals_forces[i]);
         }
 
         for (int i = 0; i < N; i++) {
@@ -69,36 +71,11 @@ void calculate(int N, int T, double G, double TIME_DELTA, Partical *particals) {
     }
 }
 
-// void calculate(int N, int T, double G, double TIME_DELTA, vector<Partical> particals) {
-//     Partical particals_next[N];
-//     // vector<Partical> particals_next {particals}
-//     for (int i = 0; i < N; ++i) {
-//         particals_next[i] = (&particals.front())[i];
-//     }
-
-//     Force particals_forces[N];
-//     for (int z = 0; z < T; ++z) {
-//         Cell* octree = generate_octtree(N, &particals.front());
-//         // cout << "tree generated " << octree << endl;
-//         compute_cell_properties(octree, &particals.front());
-
-//         for (int i = 0; i < N; ++i) {
-//             compute_force(i, N, G, &particals.front(), &(particals_forces[i]), octree);
-//         }
-//         // cout << "force computed" << endl;
-//         for (int i = 0; i < N; ++i) {
-//             update_body(&(particals_next[i]), N, G, TIME_DELTA, particals[i], particals_forces[i]);
-//         }
-
-//         for (int i = 0; i < N; i++) {
-//             particals[i] = particals_next[i];
-//         }
-
-//         delete_octtree(octree);
-//     }
-// }
-
 int main(int argc, char **argv) {
+    MPI_Init(&argc, &argv);
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
     uint64_t start, end;
 
     if (argc < 2) {
@@ -109,16 +86,16 @@ int main(int argc, char **argv) {
     load_data(argv[1], particals);
 
     start = GetTimeStamp();
-    calculate(N, T, G, DT, &particals.front());
-    // calculate(N, T, G, DT, particals);
+    calculate(N, T, &particals.front());
 
 
-    for (auto const &b: particals) 
+    for (auto const &b: particals)
     {
         cout << b;
     }
 
     cout << "time = " << GetTimeStamp() - start << " ns" << endl;
 
+    MPI::Finalize();
     return 0;
 }

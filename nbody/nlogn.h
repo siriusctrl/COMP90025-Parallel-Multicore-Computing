@@ -10,6 +10,7 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <mpi.h>
 
 #include "cell.h"
 
@@ -25,6 +26,7 @@ uint64_t GetTimeStamp() {
 
 int N {0};
 int T {0};
+const MPI_Comm comm = MPI_COMM_WORLD;
 
 void load_data(string filename, vector<Partical> &particals)
 {
