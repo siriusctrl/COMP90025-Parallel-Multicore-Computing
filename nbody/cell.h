@@ -215,7 +215,7 @@ void delete_octtree(Cell* cell) {
  * Computes the force between the particles in the system, 
  * using the clustering-approximation for long distant forces
  */
-void compute_force_from_octtree(Cell* cell, int index, Partical * particals, double G, Force * force) {
+void compute_force_from_octtree(Cell* cell, int index, Partical * particals, Force * force) {
     if (cell->n_children == 0) {
         if (cell->index != -1 && cell->index != index) {
             cell->compute_force_from_cell(particals[index], force);
@@ -229,7 +229,7 @@ void compute_force_from_octtree(Cell* cell, int index, Partical * particals, dou
             cell->compute_force_from_cell(particals[index], force);
         } else {
             for (int i = 0; i < cell->n_children; ++i) {
-                compute_force_from_octtree(cell->children[i], index, particals, G, force);
+                compute_force_from_octtree(cell->children[i], index, particals, force);
             }
         }      
     }

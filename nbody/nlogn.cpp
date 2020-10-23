@@ -2,13 +2,13 @@
 
 // compute force for body i based on body j where j != i
 // i: body i
-void compute_force(int i, int N, double G, Partical *particals, Force * force, Cell* cell){
+void compute_force(int i, int N, Partical *particals, Force * force, Cell* cell){
     // reset force
     force->fx = 0;
     force->fy = 0;
     force->fz = 0;
 
-    compute_force_from_octtree(cell, i, particals, G, force);
+    compute_force_from_octtree(cell, i, particals, force);
 }
 
 // update position and velocity of a body
@@ -55,7 +55,7 @@ void calculate(int N, int T, double G, double TIME_DELTA, Partical *particals) {
         // cout << "tree generated " << octtree << endl;
         octtree->compute_cell_properties(particals);
         for (int i = 0; i < N; ++i) {
-            compute_force(i, N, G, particals, &(particals_forces[i]), octtree);
+            compute_force(i, N, particals, &(particals_forces[i]), octtree);
         }
         // cout << "force computed" << endl;
         for (int i = 0; i < N; ++i) {
