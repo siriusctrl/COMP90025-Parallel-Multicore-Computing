@@ -36,7 +36,7 @@ public:
         // Cell no longer a leaf
         n_children = 8;
 
-        // Create and initialize new children   
+        // Create and initialize new children
         for (int i = 0; i < n_children; ++i) {
             children[i] = new Cell {w, h, d};
         }
@@ -176,62 +176,67 @@ private:
     }
 };
 
-/* Generates the octtree for the entire system of particles */
-Cell* generate_octtree(int N, Partical* particals) {
-    // Initialize root of octtree
-    Cell* root_cell = new Cell {X_BOUND, Y_BOUND, Z_BOUND};
-    root_cell->index = 0;
-    // cout << root_cell->n_children << endl;
 
-    for (int i = 1; i < N; ++i) {
-        Cell* cell = root_cell;
+namespace BH_Octtree {
+    /* Generates the octtree for the entire system of particles */
+    Cell* create_tree(int N, Partical* particals) {
+        // Initialize root of octtree
+        Cell* root_cell = new Cell {X_BOUND, Y_BOUND, Z_BOUND};
+        root_cell->index = 0;
+        // cout << root_cell->n_children << endl;
 
-        // Find which node to add the partical to
-        while (cell->n_children != 0) {
-            int sc = cell->locate_child(particals[i]);
-            cell = cell->children[sc];
-        }
+        for (int i = 1; i < N; ++i) {
+            Cell* cell = root_cell;
 
-        cell->add_to_cell(particals, i);
-    }
-    return root_cell;
-}
-
-/* Deletes the octtree */
-void delete_octtree(Cell* cell) {
-    if (cell->n_children == 0) {
-        delete cell;
-        return;
-    }
-
-    for (int i = 0; i < cell->n_children; ++i) {
-        delete_octtree(cell->children[i]);
-    }
-
-    delete cell;
-}
-
-/* 
- * Computes the force between the particles in the system, 
- * using the clustering-approximation for long distant forces
- */
-void compute_force_from_octtree(Cell* cell, int index, Partical * particals, Force * force) {
-    if (cell->n_children == 0) {
-        if (cell->index != -1 && cell->index != index) {
-            cell->compute_force_from_cell(particals[index], force);
-        }
-    } else {
-        // double d = compute_distance(particals[index], cell->center);
-        double d = compute_distance(particals[index], cell->center);
-        
-        if (THETA > (cell->width / d)){ 
-            // Use approximation
-            cell->compute_force_from_cell(particals[index], force);
-        } else {
-            for (int i = 0; i < cell->n_children; ++i) {
-                compute_force_from_octtree(cell->children[i], index, particals, force);
+            // Find which node to add the partical to
+            while (cell->n_children != 0) {
+                int sc = cell->locate_child(particals[i]);
+                cell = cell->children[sc];
             }
-        }      
+
+            cell->add_to_cell(particals, i);
+        }
+        return root_cell;
+    }
+
+    /* 
+    * Deletes the octtree and free the memory
+    */
+    void delete_octtree(Cell* cell) {
+        if (cell->n_children == 0) {
+            delete cell;
+            return;
+        }
+
+        for (int i = 0; i < cell->n_children; ++i) {
+            delete_octtree(cell->children[i]);
+        }
+
+        delete cell;
+    }
+
+    /* 
+    * Computes the force between the particles in the system, 
+    * using the clustering-approximation for long distant forces
+    */
+    void octtree_force(Cell* cell, int index, Partical * particals, Force * force) {
+        if (cell->n_children == 0) {
+            if (cell->index != -1 && cell->index != index) {
+                cell->compute_force_from_cell(particals[index], force);
+            }
+        } else {
+            // double d = compute_distance(particals[index], cell->center);
+            double d = compute_distance(particals[index], cell->center);
+            
+            if (THETA > (cell->width / d)){ 
+                // Use approximation
+                cell->compute_force_from_cell(particals[index], force);
+            } else {
+                for (int i = 0; i < cell->n_children; ++i) {
+                    octtree_force(cell->children[i], index, particals, force);
+                }
+            }      
+        }
     }
 }
 

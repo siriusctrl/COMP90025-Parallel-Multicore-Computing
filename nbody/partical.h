@@ -5,7 +5,7 @@
 #include <string>
 #include <sstream>
 
-using namespace std;
+using std::endl;
 
 constexpr double EPSILON = 0.000001;
 constexpr double X_BOUND = 1.0e6;      // Width of space

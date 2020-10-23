@@ -11,10 +11,12 @@
 #include <sstream>
 #include <fstream>
 #include <mpi.h>
+#include <omp.h>
 
 #include "cell.h"
 
-using namespace std;
+using std::string;
+using std::vector;
 
 // Return current time, for performance measurement
 // Adapt from previous assignment
@@ -27,6 +29,7 @@ uint64_t GetTimeStamp() {
 int N {0};
 int T {0};
 const MPI_Comm comm = MPI_COMM_WORLD;
+constexpr int root {0};
 
 void load_data(string filename, vector<Partical> &particals)
 {
@@ -39,13 +42,13 @@ void load_data(string filename, vector<Partical> &particals)
 
     // n bodies
     num_iss >> N;
-    cout << "get " << N << " particals" << endl;
+    std::cout << "get " << N << " particals" << endl;
 
     // read the iteration values
     std::getline(file, line);
     std::istringstream iteration_iss {line};
     iteration_iss >> T;
-    cout << "run " << T << " iterations" << endl;
+    std::cout << "run " << T << " iterations" << endl;
 
     int count {0};
 
@@ -64,9 +67,23 @@ void load_data(string filename, vector<Partical> &particals)
     }
 
     if (count != N) {
-        cout << "bodies number unmatched" << " get " << count << ", need " << N << endl;
+        std::cout << "bodies number unmatched" << " get " << count << ", need " << N << endl;
         exit(1);
     }
+}
+
+MPI_Datatype create_MPI_Partical() {
+    MPI_Datatype MPI_Partical;
+    MPI_Type_contiguous(7, MPI_DOUBLE, &MPI_Partical);
+    MPI_Type_commit(&MPI_Partical);
+    return MPI_Partical;
+}
+
+MPI_Datatype create_MPI_Force() {
+    MPI_Datatype MPI_Force;
+    MPI_Type_contiguous(3, MPI_DOUBLE, &MPI_Force);
+    MPI_Type_commit(&MPI_Force);
+    return MPI_Force;
 }
 
 #endif // __NLOGN_H__

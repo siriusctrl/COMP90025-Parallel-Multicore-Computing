@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-set(CMAKE_CXX_COMPILER "mpicxx")
+# set(CMAKE_CXX_COMPILER "mpicxx")
 # set(CMAKE_CXX_COMPILER "g++")
 
 project(nbody_nlogn)
@@ -21,4 +21,4 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(nlogn PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
-set(MPI_COMPILE_FLAGS "-O3")
+set(CMAKE_CXX_FLAGS  "-O3")
