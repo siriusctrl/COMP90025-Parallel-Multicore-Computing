@@ -20,7 +20,7 @@ public:
         : width {width}, height {height}, depth {depth}, index {-1}, n_children {0}
         {
             // cout << "Cell created" << endl;
-            center = Partical(0.0);
+            center = default_partical();
         }
     
     /*
@@ -151,7 +151,7 @@ public:
         // distance in z direction
         pz_diff = center.pz - partical.pz;
 
-        d = partical.compute_distance(center);
+        d = compute_distance(partical, center);
 
         // G * m_i * m_j / (||p_j - p_i||)^3
         factor = G * center.mass * partical.mass / (pow(d, 3) + EPSILON); // + epsilon to avoid zero division
@@ -165,14 +165,14 @@ private:
 
     void set_location_of_children(double w, double h, double d)
     {
-        ((children[0])->center).set_coordinates(center);
-        ((children[1])->center).set_coordinates(center, w, 0, 0);
-        ((children[2])->center).set_coordinates(center, w, 0, d);
-        ((children[3])->center).set_coordinates(center, 0, 0, d);
-        ((children[4])->center).set_coordinates(center, 0, h, 0);
-        ((children[5])->center).set_coordinates(center, w, h, 0);
-        ((children[6])->center).set_coordinates(center, w, h, d);
-        ((children[7])->center).set_coordinates(center, 0, h, d);
+        set_coordinates((children[0])->center, center);
+        set_coordinates((children[1])->center, center, w, 0, 0);
+        set_coordinates((children[2])->center, center, w, 0, d);
+        set_coordinates((children[3])->center, center, 0, 0, d);
+        set_coordinates((children[4])->center, center, 0, h, 0);
+        set_coordinates((children[5])->center, center, w, h, 0);
+        set_coordinates((children[6])->center, center, w, h, d);
+        set_coordinates((children[7])->center, center, 0, h, d);
     }
 };
 
@@ -222,7 +222,7 @@ void compute_force_from_octtree(Cell* cell, int index, Partical * particals, For
         }
     } else {
         // double d = compute_distance(particals[index], cell->center);
-        double d = particals[index].compute_distance(cell->center);
+        double d = compute_distance(particals[index], cell->center);
         
         if (THETA > (cell->width / d)){ 
             // Use approximation

@@ -59,7 +59,7 @@ void load_data(string filename, vector<Partical> &particals)
             break; 
         }
 
-        particals.emplace_back(count, mass, px, py, pz, vx, vy, vz);
+        particals.emplace_back(init_partical(mass, px, py, pz, vx, vy, vz));
         count++;
     }
 
