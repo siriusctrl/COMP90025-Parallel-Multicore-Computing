@@ -11,7 +11,7 @@ constexpr double EPSILON = 0.000001;
 constexpr double X_BOUND = 1.0e6;      // Width of space
 constexpr double Y_BOUND = 1.0e6;      // Height of space
 constexpr double Z_BOUND = 1.0e6;      // Depth of space
-constexpr double THETA   = 0;        // Opening angle, for approximation in Barned hut algorithm
+constexpr double THETA   = 1.0;        // Opening angle, for approximation in Barned hut algorithm
 
 constexpr double G = 6.67e-11;
 constexpr double DT = 0.001;

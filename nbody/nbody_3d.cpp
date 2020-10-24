@@ -13,7 +13,7 @@ int main(int argc, char const *argv[])
     vector<partical> particals;
     read_data(argv[1], particals);
 
-    omp_set_num_threads(12);
+    omp_set_num_threads(3);
 
     for (int t=0; t<ITERATION; t++)
     {

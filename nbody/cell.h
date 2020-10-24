@@ -37,6 +37,7 @@ public:
         n_children = 8;
 
         // Create and initialize new children
+        // #pragma omp parallel for num_threads(6)
         for (int i = 0; i < n_children; ++i) {
             children[i] = new Cell {w, h, d};
         }

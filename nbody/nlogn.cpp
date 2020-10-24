@@ -68,6 +68,8 @@ void calculate(Partical *particals) {
 
     MPI_Bcast(total_particals, N, MPI_Partical, root, comm);
 
+    // omp_set_num_threads(1);
+
     //repeat the following for T iterations
     for (int _ = 0; _ < T; ++_) 
     {
@@ -76,11 +78,13 @@ void calculate(Partical *particals) {
         Cell* octtree = BH_Octtree::create_tree(N, total_particals);
         octtree->compute_cell_properties(total_particals);
 
+        // #pragma omp parallel for
         for (int i = start; i < end; ++i) 
         {
             current_particals[i - start] = total_particals[i];
         }
 
+        // #pragma omp parallel for
         for (int i = start; i < end; ++i)
         {
             compute_force(i, N, total_particals, current_forces+i-start, octtree);
@@ -90,6 +94,7 @@ void calculate(Partical *particals) {
                         total_forces, workload, MPI_Force,
                         comm);
         
+        // #pragma omp parallel for
         for (int i = start; i < end; ++i)
         {
             update_particals(current_particals+i-start, N, total_particals[i], total_forces[i]);
