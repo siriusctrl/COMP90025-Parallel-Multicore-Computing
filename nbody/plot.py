@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-if __name__ == "__main__":
+def load_data():
     nodes = ["1n", "2n", "4n", "6n", "8n", "10n", "12n"]
     out = ["10", "100", "1000", "5000"]
 
@@ -18,18 +18,21 @@ if __name__ == "__main__":
 
         stdout, _ = process.communicate()
         timing.append(str(stdout).split(" ")[-2])
-    
-    for i in range(len(timing)):
-        print(files[i], timing[i])
 
     group_res = []
     cores = []
     
     for i in range(int(len(files) / 4)):
-        group_res.append(timing[i*4:(i+1)*4])
+        group_res.append(list(map(lambda x: float(x),timing[i*4:(i+1)*4])))
         if 'n' in files[i*4][:2]:
-            print(files[i*4][:1])
+            cores.append(files[i*4][:1])
         else:
-            print(files[i*4][:2])
+            cores.append(files[i*4][:2])
+    
+    print(group_res)
 
-        
+    return group_res, cores
+
+
+if __name__ == "__main__":
+    load_data()
