@@ -1,0 +1,10 @@
+Oct 24 18:00:03 spartan-snowy024 kernel: Task in /slurm/uid_12990/job_21157286/step_4 killed as a result of limit of /slurm/uid_12990/job_21157286/step_4
+Oct 24 18:00:03 spartan-snowy024 kernel: memory: usage 33554432kB, limit 33554432kB, failcnt 86
+Oct 24 18:00:03 spartan-snowy024 kernel: memory+swap: usage 33554432kB, limit 33554432kB, failcnt 0
+Oct 24 18:00:03 spartan-snowy024 kernel: kmem: usage 0kB, limit 9007199254740988kB, failcnt 0
+Oct 24 18:00:03 spartan-snowy024 kernel: Memory cgroup stats for /slurm/uid_12990/job_21157286/step_4: cache:9816KB rss:33544616KB rss_huge:81920KB mapped_file:9248KB swap:0KB inactive_anon:145308KB active_anon:33409096KB inactive_file:28KB active_file:0KB unevictable:0KB
+Oct 24 18:00:06 spartan-snowy009 kernel: Task in /slurm/uid_12990/job_21157286/step_4 killed as a result of limit of /slurm/uid_12990/job_21157286/step_4
+Oct 24 18:00:06 spartan-snowy009 kernel: memory: usage 33554432kB, limit 33554432kB, failcnt 2480
+Oct 24 18:00:06 spartan-snowy009 kernel: memory+swap: usage 33554432kB, limit 33554432kB, failcnt 0
+Oct 24 18:00:06 spartan-snowy009 kernel: kmem: usage 0kB, limit 9007199254740988kB, failcnt 0
+Oct 24 18:00:06 spartan-snowy009 kernel: Memory cgroup stats for /slurm/uid_12990/job_21157286/step_4: cache:9796KB rss:33544636KB rss_huge:49152KB mapped_file:9256KB swap:0KB inactive_anon:1864156KB active_anon:31690264KB inactive_file:0KB active_file:0KB unevictable:0KB
