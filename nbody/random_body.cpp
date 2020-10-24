@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
     }
 
     cout << N << endl;
-    int T = 10000;
+    int T = 1000;
     cout << T << endl;
     // double G = 6.67e-11;
     // cout << G << endl;
