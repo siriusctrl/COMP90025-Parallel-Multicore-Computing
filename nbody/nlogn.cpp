@@ -71,12 +71,12 @@ void calculate(Partical *particals) {
     // omp_set_num_threads(1);
 
     //repeat the following for T iterations
-    for (int adc = 0; adc < T; ++adc) 
-    {
-        if(rank == root) {
-            std::cout << adc << endl;
+    for (int iter = 0; iter < T; ++iter) 
+    {   
+        if (rank == root) {
+            std::cout << iter << endl;
         }
-        
+
         Force current_forces[workload];
         Partical current_particals[workload];
         Cell* octtree = BH_Octtree::create_tree(N, total_particals);
@@ -152,4 +152,4 @@ int main(int argc, char **argv) {
     MPI_Finalize();
     return 0;
 }
-//mpicxx -std=c++14 -fopenmp -o nlogn nlogn.h cell.h nlogn.cpp partical.h -O3  
+//mpicxx -std=c++14 -fopenmp -o nlogn nlogn.h cell.h nlogn.cpp partical.h -O3

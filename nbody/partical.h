@@ -14,7 +14,7 @@ constexpr double Z_BOUND = 1.0e6;      // Depth of space
 constexpr double THETA   = 1.0;        // Opening angle, for approximation in Barned hut algorithm
 
 constexpr double G = 6.67e-11;
-constexpr double DT = 0.01;
+constexpr double DT = 0.001;
 constexpr double MASS_BOUND = 1.0e24;
 
 // // Partical related calculation
