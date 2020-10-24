@@ -16,3 +16,4 @@ mpirun -np 2 nlogn body_10.data > 2n1c_10_nlogn.out
 mpirun -np 2 nlogn body_100.data > 2n1c_100_nlogn.out
 mpirun -np 2 nlogn body_1000.data > 2n1c_1000_nlogn.out
 mpirun -np 2 nlogn body_5000.data > 2n1c_5000_nlogn.out
+mpirun -np 2 nlogn body_10000.data > 2n1c_10000_nlogn.out
