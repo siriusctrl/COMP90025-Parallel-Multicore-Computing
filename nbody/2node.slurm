@@ -16,5 +16,6 @@ mpicxx -std=c++14 -fopenmp -o nlogn nlogn.h cell.h nlogn.cpp partical.h -O3
 # mpirun -np 2 nlogn body_100.data > 2n1c_100_nlogn.out
 # mpirun -np 2 nlogn body_1000.data > 2n1c_1000_nlogn.out
 # mpirun -np 2 nlogn body_5000.data > 2n1c_5000_nlogn.out
-mpirun -np 2 nlogn body_2000.data > 2n1c_2000_nlogn.out
-mpirun -np 2 nlogn body_4000.data > 2n1c_4000_nlogn.out
+mpirun -np 2 nlogn body_1500.data > 2n1c_1500_nlogn.out
+mpirun -np 2 nlogn body_3000.data > 2n1c_3000_nlogn.out
+mpirun -np 2 nlogn body_3500.data > 2n1c_3500_nlogn.out
