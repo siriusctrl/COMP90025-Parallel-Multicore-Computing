@@ -73,9 +73,9 @@ void calculate(Partical *particals) {
     //repeat the following for T iterations
     for (int iter = 0; iter < T; ++iter) 
     {   
-        if (rank == root) {
-            std::cout << iter << endl;
-        }
+        // if (rank == root) {
+        //     std::cout << iter << endl;
+        // }
 
         Force current_forces[workload];
         Partical current_particals[workload];
