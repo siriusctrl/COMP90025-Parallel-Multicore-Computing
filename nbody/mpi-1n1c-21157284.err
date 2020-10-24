@@ -1,8 +1,0 @@
---------------------------------------------------------------------------
-Primary job  terminated normally, but 1 process returned
-a non-zero exit code. Per user-direction, the job has been aborted.
---------------------------------------------------------------------------
---------------------------------------------------------------------------
-mpirun noticed that process rank 0 with PID 20303 on node spartan-snowy001 exited on signal 9 (Killed).
---------------------------------------------------------------------------
-slurmstepd: error: Detected 1 oom-kill event(s) in step 21157284.batch cgroup. Some of your processes may have been killed by the cgroup out-of-memory handler.

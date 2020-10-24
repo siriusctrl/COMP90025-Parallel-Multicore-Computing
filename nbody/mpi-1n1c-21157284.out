@@ -1,5 +1,0 @@
-Oct 24 18:02:39 spartan-snowy001 kernel: Task in /slurm/uid_12990/job_21157284/step_batch killed as a result of limit of /slurm/uid_12990/job_21157284/step_batch
-Oct 24 18:02:39 spartan-snowy001 kernel: memory: usage 33554432kB, limit 33554432kB, failcnt 356
-Oct 24 18:02:39 spartan-snowy001 kernel: memory+swap: usage 33554432kB, limit 33554432kB, failcnt 0
-Oct 24 18:02:39 spartan-snowy001 kernel: kmem: usage 0kB, limit 9007199254740988kB, failcnt 0
-Oct 24 18:02:39 spartan-snowy001 kernel: Memory cgroup stats for /slurm/uid_12990/job_21157284/step_batch: cache:9800KB rss:33544632KB rss_huge:0KB mapped_file:9248KB swap:0KB inactive_anon:32704KB active_anon:33521720KB inactive_file:8KB active_file:0KB unevictable:0KB

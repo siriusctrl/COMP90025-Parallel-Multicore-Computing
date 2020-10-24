@@ -1,3 +1,0 @@
-get 10000 particals
-run 1000 iterations
-2 total processes killed (some possibly by mpirun during cleanup)

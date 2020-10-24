@@ -3,7 +3,7 @@ import subprocess
 
 def load_data():
     nodes = ["1n", "2n", "4n", "6n", "8n", "10n", "12n"]
-    out = ["10", "100", "1000", "5000"]
+    out = ["10", "100", "1000", "1500", "2500", "5000"]
 
     files = [i+"1c_"+j+"_nlogn.out" for i in nodes for j in out]
 
@@ -22,12 +22,14 @@ def load_data():
     group_res = []
     cores = []
     
-    for i in range(int(len(files) / 4)):
-        group_res.append(list(map(lambda x: float(x),timing[i*4:(i+1)*4])))
-        if 'n' in files[i*4][:2]:
-            cores.append(files[i*4][:1])
+    p = len(out)
+
+    for i in range(int(len(files) / p)):
+        group_res.append(list(map(lambda x: float(x),timing[i*p:(i+1)*p])))
+        if 'n' in files[i*p][:2]:
+            cores.append(files[i*p][:1])
         else:
-            cores.append(files[i*4][:2])
+            cores.append(files[i*p][:2])
     
     print(group_res)
 
