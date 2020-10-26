@@ -1,14 +1,16 @@
 #ifndef __CELL_H__
 #define __CELL_H__
 
-#include "partical.h"
+#include "particle.h"
+
+constexpr double THETA   = 1.0;        // Opening angle, for approximation in Barned hut algorithm
 
 class Cell  {
 public:
     int index;                   // Index into arrays to identify particle's 
                                     // position and mass
     int n_children;              // Indicate whether cell is leaf or has 8 children
-    Partical center;                 // center of approximate partical
+    Particle center;                 // center of approximate particle
                                     //  - Mass of particle of total mass of subtree
                                     //  - position of cell(cube) in space
                                     //  - position of center of mass of cell
@@ -20,14 +22,14 @@ public:
         : width {width}, height {height}, depth {depth}, index {-1}, n_children {0}
         {
             // cout << "Cell created" << endl;
-            center = default_partical();
+            center = default_particle();
         }
     
     /*
     * Generates new children for the current cell, forming a subtree. 
     * The current cell will no longer be a leaf
     */
-    void generate_children() 
+    void generate_children()
     {
         double w  = width / 2.0;
         double h = height / 2.0;
@@ -48,32 +50,32 @@ public:
     /* 
      * Locates the child to which the particle must be added 
      */
-    int locate_child(const Partical &partical)
+    int locate_child(const Particle &particle)
     {
-        // Determine which child to add the partical to
-        if (partical.px > children[6]->center.px) {
-            if (partical.py > children[6]->center.py) {
-                if (partical.pz > children[6]->center.pz) {
+        // Determine which child to add the particle to
+        if (particle.px > children[6]->center.px) {
+            if (particle.py > children[6]->center.py) {
+                if (particle.pz > children[6]->center.pz) {
                     return 6;
                 } else {
                     return 5;
                 }
             } else {
-                if (partical.pz > children[6]->center.pz) {
+                if (particle.pz > children[6]->center.pz) {
                     return 2;
                 } else {
                     return 1;
                 }
             }
         } else {
-            if (partical.py > children[6]->center.py) {
-                if (partical.pz > children[6]->center.pz) {
+            if (particle.py > children[6]->center.py) {
+                if (particle.pz > children[6]->center.pz) {
                     return 7;
                 } else {
                     return 4;
                 }
             } else {
-                if (partical.pz > children[6]->center.pz) {
+                if (particle.pz > children[6]->center.pz) {
                     return 3;
                 } else {
                     return 0;
@@ -88,7 +90,7 @@ public:
     * exists, the cube/cell is sub-divided adding the existing
     * and new particle to the sub cells
     */
-    void add_to_cell(Partical* particals, int i)
+    void add_to_cell(Particle* particles, int i)
     {
         if (index == -1) {
             index = i;
@@ -97,38 +99,41 @@ public:
 
         generate_children();
 
-        // The current cell's partical must now be re-added to one of its children
-        int sc1 = locate_child(particals[index]);
+        // The current cell's particle must now be re-added to one of its children
+        int sc1 = locate_child(particles[index]);
         children[sc1]->index = index;
 
-        // Locate child for new partical
-        int sc2 = locate_child(particals[i]);
+        // Locate child for new particle
+        int sc2 = locate_child(particles[i]);
 
         if (sc1 == sc2) {
-            children[sc1]->add_to_cell(particals, i);
+            children[sc1]->add_to_cell(particles, i);
         } else {
             children[sc2]->index = i;
         }
     }
 
 
-    /* Computes the total mass and the center of mass of the current cell */
-    Cell* compute_cell_properties(Partical *particals) {
+    /* 
+     * Computes the total mass and the center of mass of the current cell 
+     */
+    Cell* generate_center(Particle *particles) {
         if (n_children == 0) {
             if (index != -1) {
-                center = particals[index];
+                center = particles[index];
                 return this;
             }
         } else {      
-            double tx = 0, ty = 0, tz = 0;
+            double tx {0.0}, ty {0.0}, tz {0.0};
+            
             for (int i = 0; i < n_children; ++i) {
-                Cell* child = children[i]->compute_cell_properties(particals);
+                Cell* child = children[i]->generate_center(particles);
 
                 if (child != NULL) {
                     center.mass += (child->center).mass;
-                    tx += particals[child->index].px * (child->center).mass;
-                    ty += particals[child->index].py * (child->center).mass;
-                    tz += particals[child->index].pz * (child->center).mass;            
+                    tx += particles[child->index].px * (child->center).mass;
+                    ty += particles[child->index].py * (child->center).mass;
+                    tz += particles[child->index].pz * (child->center).mass;            
                 }
             }
             
@@ -142,21 +147,21 @@ public:
         return nullptr;
     }
 
-    void compute_force_from_cell(const Partical &partical, Force * force) const
+    void compute_force_from_cell(const Particle &particle, Force * force) const
     {
         double px_diff, py_diff, pz_diff, factor, d;
         // distance in x direction
-        px_diff = center.px - partical.px;
+        px_diff = center.px - particle.px;
         // distance in y direction
-        py_diff = center.py - partical.py;
+        py_diff = center.py - particle.py;
         // distance in z direction
-        pz_diff = center.pz - partical.pz;
+        pz_diff = center.pz - particle.pz;
 
-        d = compute_distance(partical, center);
+        d = compute_distance(particle, center);
 
-        // G * m_i * m_j / (||p_j - p_i||)^3
-        factor = G * center.mass * partical.mass / (pow(d, 3) + EPSILON); // + epsilon to avoid zero division
-        // f_ij = factor * (p_j - p_i)
+        // even though we are aussing that no collide, but we still add a small number to
+        // prevent 0 division
+        factor = G * center.mass * particle.mass / (pow(d, 3) + EPSILON);
         force->fx += px_diff * factor; // force in x direction
         force->fy += py_diff * factor; // force in y direction
         force->fz += pz_diff * factor; // force in z direction 
@@ -179,23 +184,24 @@ private:
 
 
 namespace BH_Octtree {
-    /* Generates the octtree for the entire system of particles */
-    Cell* create_tree(int N, Partical* particals) {
+    /* 
+    * Generates the octtree for the entire system of particles 
+    */
+    Cell* create_tree(int N, Particle* particles) {
         // Initialize root of octtree
         Cell* root_cell = new Cell {X_BOUND, Y_BOUND, Z_BOUND};
         root_cell->index = 0;
-        // cout << root_cell->n_children << endl;
 
         for (int i = 1; i < N; ++i) {
             Cell* cell = root_cell;
 
-            // Find which node to add the partical to
+            // Find which node to add the particle to
             while (cell->n_children != 0) {
-                int sc = cell->locate_child(particals[i]);
+                int sc = cell->locate_child(particles[i]);
                 cell = cell->children[sc];
             }
 
-            cell->add_to_cell(particals, i);
+            cell->add_to_cell(particles, i);
         }
         return root_cell;
     }
@@ -203,14 +209,14 @@ namespace BH_Octtree {
     /* 
     * Deletes the octtree and free the memory
     */
-    void delete_octtree(Cell* cell) {
+    void delete_tree(Cell* cell) {
         if (cell->n_children == 0) {
             delete cell;
             return;
         }
 
         for (int i = 0; i < cell->n_children; ++i) {
-            delete_octtree(cell->children[i]);
+            delete_tree(cell->children[i]);
         }
 
         delete cell;
@@ -220,21 +226,21 @@ namespace BH_Octtree {
     * Computes the force between the particles in the system, 
     * using the clustering-approximation for long distant forces
     */
-    void octtree_force(Cell* cell, int index, Partical * particals, Force * force) {
+    void octtree_force(Cell* cell, int index, Particle * particles, Force * force) {
         if (cell->n_children == 0) {
             if (cell->index != -1 && cell->index != index) {
-                cell->compute_force_from_cell(particals[index], force);
+                cell->compute_force_from_cell(particles[index], force);
             }
         } else {
-            // double d = compute_distance(particals[index], cell->center);
-            double d = compute_distance(particals[index], cell->center);
+            // double d = compute_distance(particles[index], cell->center);
+            double d = compute_distance(particles[index], cell->center);
             
             if (THETA > (cell->width / d)){ 
                 // Use approximation
-                cell->compute_force_from_cell(particals[index], force);
+                cell->compute_force_from_cell(particles[index], force);
             } else {
                 for (int i = 0; i < cell->n_children; ++i) {
-                    octtree_force(cell->children[i], index, particals, force);
+                    octtree_force(cell->children[i], index, particles, force);
                 }
             }      
         }

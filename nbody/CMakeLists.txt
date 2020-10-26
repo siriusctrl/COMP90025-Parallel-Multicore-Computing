@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-# set(CMAKE_CXX_COMPILER "mpicxx")
+set(CMAKE_CXX_COMPILER "mpicxx")
 # set(CMAKE_CXX_COMPILER "g++")
 
 project(nbody_nlogn)

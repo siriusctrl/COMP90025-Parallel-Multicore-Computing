@@ -31,18 +31,18 @@ int T {0};
 const MPI_Comm comm = MPI_COMM_WORLD;
 constexpr int root {0};
 
-void load_data(string filename, vector<Partical> &particals)
+void load_data(string filename, vector<Particle> &particles)
 {
     std::ifstream file {filename};
     string line {};
 
-    //read the particals number
+    //read the particles number
     std::getline(file, line);
     std::istringstream num_iss {line};
 
     // n bodies
     num_iss >> N;
-    std::cout << "get " << N << " particals" << endl;
+    std::cout << "get " << N << " particles" << endl;
 
     // read the iteration values
     std::getline(file, line);
@@ -52,7 +52,7 @@ void load_data(string filename, vector<Partical> &particals)
 
     int count {0};
 
-    // read each partical settings
+    // read each particle settings
     while (std::getline(file, line))
     {   
         std::istringstream iss {line};
@@ -62,7 +62,7 @@ void load_data(string filename, vector<Partical> &particals)
             break; 
         }
 
-        particals.emplace_back(init_partical(mass, px, py, pz, vx, vy, vz));
+        particles.emplace_back(init_particle(mass, px, py, pz, vx, vy, vz));
         count++;
     }
 
@@ -72,11 +72,11 @@ void load_data(string filename, vector<Partical> &particals)
     }
 }
 
-MPI_Datatype create_MPI_Partical() {
-    MPI_Datatype MPI_Partical;
-    MPI_Type_contiguous(7, MPI_DOUBLE, &MPI_Partical);
-    MPI_Type_commit(&MPI_Partical);
-    return MPI_Partical;
+MPI_Datatype create_MPI_Particle() {
+    MPI_Datatype MPI_Particle;
+    MPI_Type_contiguous(7, MPI_DOUBLE, &MPI_Particle);
+    MPI_Type_commit(&MPI_Particle);
+    return MPI_Particle;
 }
 
 MPI_Datatype create_MPI_Force() {

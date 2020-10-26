@@ -1,4 +1,5 @@
-#include "nbody_3d.h"
+#include "particle.h"
+#include "n2.h"
 
 int ITERATION = 0;
 
@@ -111,7 +112,7 @@ void update_coordinate(const vector<particle> &particles,
     }
 }
 
-void read_data(string filename, vector<particle> &particles) 
+void read_data(string filename, vector<Particle> &particles) 
 {
 
     std::ifstream file {filename};
