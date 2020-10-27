@@ -147,7 +147,7 @@ public:
         return nullptr;
     }
 
-    void compute_force_from_cell(const Particle &particle, Force * force) const
+    void cell_force(const Particle &particle, Force * force) const
     {
         double px_diff, py_diff, pz_diff, factor, d;
         // distance in x direction
@@ -229,7 +229,7 @@ namespace BH_Octtree {
     void octtree_force(Cell* cell, int index, Particle * particles, Force * force) {
         if (cell->n_children == 0) {
             if (cell->index != -1 && cell->index != index) {
-                cell->compute_force_from_cell(particles[index], force);
+                cell->cell_force(particles[index], force);
             }
         } else {
             // double d = compute_distance(particles[index], cell->center);
@@ -237,7 +237,7 @@ namespace BH_Octtree {
             
             if (THETA > (cell->width / d)){ 
                 // Use approximation
-                cell->compute_force_from_cell(particles[index], force);
+                cell->cell_force(particles[index], force);
             } else {
                 for (int i = 0; i < cell->n_children; ++i) {
                     octtree_force(cell->children[i], index, particles, force);

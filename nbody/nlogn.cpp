@@ -13,7 +13,7 @@ void compute_force(int i, int N, Particle *particles, Force * force, Cell* cell)
 }
 
 // update position and velocity of a body
-void update_particles(Particle *next_particle, int N, const Particle &cur_particle, Force force) {
+void update_particles(Particle *next_particle, const Particle &cur_particle, Force force) {
     // factor = dt / m
     double factor = DT / cur_particle.mass;
 
@@ -26,7 +26,7 @@ void update_particles(Particle *next_particle, int N, const Particle &cur_partic
     next_particle->vy += factor * force.fy;
     next_particle->vz += factor * force.fz;
 
-    // wrap the velocity if out of bound to simplify the problem
+    // wrap the velocity if out of "bound"
     if (next_particle->px >= X_BOUND) {
     next_particle->vx = -1 * abs(next_particle->vx);
     } else if (next_particle->px <= 0) {
@@ -46,7 +46,7 @@ void update_particles(Particle *next_particle, int N, const Particle &cur_partic
     }
 }
 
-void calculate(Particle *particles) {
+void simulate(Particle *particles) {
     MPI_Datatype MPI_Particle = create_MPI_Particle();
     MPI_Datatype MPI_Force = create_MPI_Force();
     int rank, size;
@@ -101,7 +101,7 @@ void calculate(Particle *particles) {
         // #pragma omp parallel for
         for (int i = start; i < end; ++i)
         {
-            update_particles(current_particles+i-start, N, total_particles[i], total_forces[i]);
+            update_particles(current_particles+i-start, total_particles[i], total_forces[i]);
         }
 
         MPI_Allgather(current_particles, workload, MPI_Particle,
@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
 
     MPI_Bcast(&N, 1, MPI_INT, root, comm);
     MPI_Bcast(&T, 1, MPI_INT, root, comm);
-    calculate(&particles.front());
+    simulate(&particles.front());
 
     if (rank == 0) {
         for (auto const &b: particles)

@@ -1,156 +1,169 @@
-#include "particle.h"
 #include "n2.h"
 
 int ITERATION = 0;
 
-int main(int argc, char const *argv[])
-{
-    if (argc < 2)
+int main(int argc, char **argv) {
+    MPI_Init(&argc, &argv);
+    
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+
+    uint64_t start, end;
+    vector<Particle> particles {};
+
+    if (rank == 0 ) 
     {
-        cout << "please specify data file" << endl;
-        return 0;
-    }
-
-    vector<particle> particles;
-    read_data(argv[1], particles);
-
-    omp_set_num_threads(12);
-
-    for (int t=0; t<ITERATION; t++)
-    {
-        vector<particle> next_particles {particles};
-
-        #pragma omp parallel for
-        for (int i=0; i < particles.size(); ++i)
-        {
-            update_coordinate(particles, i, next_particles);
-            // cout << "\nThis:\n" << endl;
-            // for (auto const &p:particles) 
-            // {
-            //     cout << p;
-            // }
-
-            // cout << "\nNest:\n" << endl;
-            // for (auto const &p:next_particles) 
-            // {
-            //     cout << p;
-            // }
+        if (argc < 2) {
+            std::cout << "unspecified file name" << endl;
         }
 
-        particles = next_particles;
 
-        // cout << "----------------------------------" << endl;
+        load_data(argv[1], particles);
+
+        start = GetTimeStamp();
     }
 
-    cout << "\nEnd:\n" << endl;
+    MPI_Bcast(&N, 1, MPI_INT, root, comm);
+    MPI_Bcast(&T, 1, MPI_INT, root, comm);
+    simulate(&particles.front());
 
-    for (auto const &p:particles) 
-    {
-        cout << p;
+    if (rank == 0) {
+        for (auto const &b: particles)
+        {
+            std::cout << b;
+        }
+
+        std::cout << "time = " << (GetTimeStamp() - start) / 1e6 << " s" << endl;
     }
 
+    MPI_Finalize();
     return 0;
 }
 
-void update_coordinate(const vector<particle> &particles, 
-                        int index, 
-                        vector<particle> &next_particles)
-{
-    double epsilon {0.001};
-    double dx {0.0}, dy {0.0}, dz {0.0};
-    double r {0.0}, r_square {0.0}, f_share {0.0}, fx {0.0}, fy{0.0}, fz {0.0};
+void simulate(Particle *particles) {
+    MPI_Datatype MPI_Particle = create_MPI_Particle();
+    MPI_Datatype MPI_Force = create_MPI_Force();
+    int rank, size;
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &size);
 
-    for (int i=0; i < particles.size(); ++i)
-    {
-        if (i != index)
-        {
-            dx = particles.at(index).px - particles.at(i).px;
-            dy = particles.at(index).py - particles.at(i).py;
-            dz = particles.at(index).pz - particles.at(i).pz;
+    int workload = (int) ceil((1.0 * N) / size);
+    int start    = rank * workload;
+    int end      = std::min(N, (rank+1) * workload);
 
-            r_square = std::sqrt(std::pow(dx,2)) + 
-                        std::sqrt(std::pow(dy, 2)) + 
-                        std::sqrt(std::pow(dz, 2)) + epsilon;
+    Force total_forces[workload * size];
+    Particle total_particles[workload * size];
 
-            r = std::sqrt(r_square) + epsilon;
-
-            f_share = G * particles.at(i).mass * particles.at(index).mass / r_square;
-
-            fx = f_share * (dx) / r;
-            fy = f_share * (dy) / r;
-            fz = f_share * (dz) / r;
-
-            next_particles.at(index).px += DT * particles.at(index).px;
-            next_particles.at(index).py += DT * particles.at(index).py;
-            next_particles.at(index).pz += DT * particles.at(index).pz;
-
-            next_particles.at(index).vx += fx * DT / particles.at(index).mass;
-            next_particles.at(index).vy += fy * DT / particles.at(index).mass;
-            next_particles.at(index).vz += fz * DT / particles.at(index).mass;
-
-            particle* next_particle = &next_particles.at(index);
-
-            // wrap the velocity if out of bound to simplify the problem
-            if (next_particle->px >= X_BOUND) {
-            next_particle->vx = -1 * abs(next_particle->vx);
-            } else if (next_particle->px <= 0) {
-            next_particle->vx = abs(next_particle->vx);
-            }
-
-            if (next_particle->py >= Y_BOUND) {
-            next_particle->vy = -1 * abs(next_particle->vy);
-            } else if (next_particle->py <= 0) {
-            next_particle->vy = abs(next_particle->vy);
-            }
-
-            if (next_particle->pz >= Z_BOUND) {
-            next_particle->vz = -1 * abs(next_particle->vz);
-            } else if (next_particle->pz <= 0) {
-            next_particle->vz = -1 * abs(next_particle->vz);
-            }
+    if (rank == root) {
+        for (int i=0; i < N; ++i) {
+            total_particles[i] = particles[i];
         }
     }
-}
 
-void read_data(string filename, vector<Particle> &particles) 
-{
+    MPI_Bcast(total_particles, N, MPI_Particle, root, comm);
 
-    std::ifstream file {filename};
-    string line {};
+    // omp_set_num_threads(1);
 
-    int num {0};
-
-    //read the particles number
-    std::getline(file, line);
-    std::istringstream num_iss {line};
-    num_iss >> num;
-    cout << "get " << num << " particles" << endl;
-    
-    // read the iteration
-    std::getline(file, line);
-    std::istringstream iteration_iss {line};
-    iteration_iss >> ITERATION;
-    cout << "run " << ITERATION << " iterations" << endl;
-
-    double mass, px, py, pz, vx, vy, vz;
-
-    // read each particle settings
-    while (std::getline(file, line))
+    //repeat the following for T iterations
+    for (int iter = 0; iter < T; ++iter) 
     {   
-        std::istringstream iss {line};
-        double mass, px, py, pz, vx, vy, vz;
-        if (!(iss >> mass >> px >> py >> pz >> vx >> vy >> vz)) 
+
+        Force current_forces[workload];
+        Particle current_particles[workload];
+
+        #pragma omp parallel for num_threads(2)
+        for (int i = start; i < end; ++i) 
         {
-            break; 
+            current_particles[i - start] = total_particles[i];
         }
 
-        particles.emplace_back(mass, px, py, pz, vx, vy, vz);
+        #pragma omp parallel for num_threads(2)
+        for (int i = start; i < end; ++i)
+        {
+            compute_force(i, N, total_particles, current_forces+i-start);
+        }
+
+        MPI_Allgather(current_forces, workload, MPI_Force,
+                        total_forces, workload, MPI_Force,
+                        comm);
+        
+        // #pragma omp parallel for
+        for (int i = start; i < end; ++i)
+        {
+            update_particles(current_particles+i-start, total_particles[i], total_forces[i]);
+        }
+
+        MPI_Allgather(current_particles, workload, MPI_Particle,
+                        total_particles, workload, MPI_Particle,
+                        comm);
     }
 
-    if (particles.size() != num) {
-        cout << "particle number unmatched" << endl;
-        exit(1);
+    MPI_Type_free(&MPI_Particle);
+    MPI_Type_free(&MPI_Force);
+}
+
+void compute_force(int i, int N, Particle *particles, Force * force) 
+{
+    force->fx = 0;
+    force->fy = 0;
+    force->fz = 0;
+
+    for (int p=0; p < N ; ++p)
+    {
+        if (p != i) 
+        {
+            double px_diff, py_diff, pz_diff, factor, d;
+            // distance in x direction
+            px_diff = particles[p].px - particles[i].px;
+            // distance in y direction
+            py_diff = particles[p].py - particles[i].py;
+            // distance in z direction
+            pz_diff = particles[p].pz - particles[i].pz;
+
+            d = compute_distance(particles[i], particles[p]);
+
+            // even though we are aussing that no collide, but we still add a small number to
+            // prevent 0 division
+            factor = G * particles[p].mass * particles[i].mass / (pow(d, 3) + EPSILON);
+            force->fx += px_diff * factor; // force in x direction
+            force->fy += py_diff * factor; // force in y direction
+            force->fz += pz_diff * factor; // force in z direction 
+        }
     }
 }
 
-// g++ -std=c++14 -fopenmp nbody_3d.cpp -o nbody_3d -O3
+void update_particles(Particle *next_particle, const Particle &cur_particle, Force force) 
+{
+    // factor = dt / m
+    double factor = DT / cur_particle.mass;
+
+    next_particle->px += DT * cur_particle.vx;
+    next_particle->py += DT * cur_particle.vy;
+    next_particle->pz += DT * cur_particle.vz;
+
+    // v = dt * a = dt * (F / m) = (dt / m) * F = factor * F
+    next_particle->vx += factor * force.fx;
+    next_particle->vy += factor * force.fy;
+    next_particle->vz += factor * force.fz;
+
+    // wrap the velocity if out of "bound"
+    if (next_particle->px >= X_BOUND) {
+    next_particle->vx = -1 * abs(next_particle->vx);
+    } else if (next_particle->px <= 0) {
+    next_particle->vx = abs(next_particle->vx);
+    }
+
+    if (next_particle->py >= Y_BOUND) {
+    next_particle->vy = -1 * abs(next_particle->vy);
+    } else if (next_particle->py <= 0) {
+    next_particle->vy = abs(next_particle->vy);
+    }
+
+    if (next_particle->pz >= Z_BOUND) {
+    next_particle->vz = -1 * abs(next_particle->vz);
+    } else if (next_particle->pz <= 0) {
+    next_particle->vz = -1 * abs(next_particle->vz);
+    }
+}
+
+// mpicxx -std=c++14 -fopenmp n2.cpp n2.h particle.h -o n2 -O3
