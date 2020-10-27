@@ -1,0 +1,12 @@
+--------------------------------------------------------------------------
+ORTE has lost communication with a remote daemon.
+
+  HNP daemon   : [[6488,0],0] on node spartan-snowy013
+  Remote daemon: [[6488,0],9] on node spartan-snowy027
+
+This is usually due to either a failure of the TCP network
+connection to the node, or possibly an internal failure of
+the daemon itself. We cannot recover from this failure, and
+therefore will terminate the job.
+--------------------------------------------------------------------------
+slurmstepd: error: *** JOB 21210136 ON spartan-snowy013 CANCELLED AT 2020-10-27T16:14:42 ***
