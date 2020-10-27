@@ -71,13 +71,13 @@ void simulate(Particle *particles) {
         Force current_forces[workload];
         Particle current_particles[workload];
 
-        #pragma omp parallel for num_threads(2)
+        #pragma omp parallel for num_threads(1)
         for (int i = start; i < end; ++i) 
         {
             current_particles[i - start] = total_particles[i];
         }
 
-        #pragma omp parallel for num_threads(2)
+        #pragma omp parallel for num_threads(1)
         for (int i = start; i < end; ++i)
         {
             compute_force(i, N, total_particles, current_forces+i-start);
