@@ -11,17 +11,25 @@ int main(int argc, char **argv) {
     uint64_t start, end;
     vector<Particle> particles {};
 
-    if (rank == 0 ) 
+    if ( rank == 0 ) 
     {
         if (argc < 2) {
             std::cout << "unspecified file name" << endl;
         }
 
-
         load_data(argv[1], particles);
 
         start = GetTimeStamp();
     }
+
+    if (argc >= 3) {
+        omp_set_num_threads(atoi(argv[2]));
+    }
+
+    // #pragma omp parallel for
+    // for (int i=0;i<10;i++) {
+    //     cout << "I am node: " << rank << ", thread: " << omp_get_thread_num() << endl;
+    // }
 
     MPI_Bcast(&N, 1, MPI_INT, root, comm);
     MPI_Bcast(&T, 1, MPI_INT, root, comm);
@@ -71,13 +79,13 @@ void simulate(Particle *particles) {
         Force current_forces[workload];
         Particle current_particles[workload];
 
-        #pragma omp parallel for num_threads(1)
+        #pragma omp parallel for
         for (int i = start; i < end; ++i) 
         {
             current_particles[i - start] = total_particles[i];
         }
 
-        #pragma omp parallel for num_threads(1)
+        #pragma omp parallel for
         for (int i = start; i < end; ++i)
         {
             compute_force(i, N, total_particles, current_forces+i-start);
