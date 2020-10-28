@@ -88,7 +88,7 @@ void simulate(Particle *particles) {
             current_particles[i - start] = total_particles[i];
         }
 
-        // #pragma omp parallel for
+        #pragma omp parallel for
         for (int i = start; i < end; ++i)
         {
             compute_force(i, N, total_particles, current_forces+i-start, octtree);
@@ -98,7 +98,7 @@ void simulate(Particle *particles) {
                         total_forces, workload, MPI_Force,
                         comm);
         
-        // #pragma omp parallel for
+        #pragma omp parallel for
         for (int i = start; i < end; ++i)
         {
             update_particles(current_particles+i-start, total_particles[i], total_forces[i]);
@@ -134,6 +134,11 @@ int main(int argc, char **argv) {
         load_data(argv[1], particles);
 
         start = GetTimeStamp();
+    }
+
+
+    if (argc >= 3) {
+        omp_set_num_threads(atoi(argv[2]));
     }
 
     MPI_Bcast(&N, 1, MPI_INT, root, comm);
