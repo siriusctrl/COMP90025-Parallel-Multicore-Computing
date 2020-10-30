@@ -99,7 +99,8 @@
         "ios": "cpp",
         "locale": "cpp",
         "queue": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "*.ipp": "cpp"
     },
     "python.pythonPath": "/Users/xinyaoniu/anaconda3/bin/python"
 }
